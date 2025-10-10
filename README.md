@@ -2,35 +2,66 @@
 
 Terraform configuration for deploying a highly available Talos Linux Kubernetes cluster on Proxmox VE.
 
+Base project and inspiration come from [Olav](https://olav.ninja/deploying-kubernetes-cluster-on-proxmox-part-1).
+
 ## Architecture
 
 - **Control Plane**: 3 nodes with VIP-based HA
 - **Worker Nodes**: 3 nodes
-- **Networking**: `/16` subnet with static IP assignments
-- **Storage**: ProxStorage datastore
+- **Networking**: `/24` subnet with static IP assignments
+- **Storage**: Proxmox datastore
 
 ## Infrastructure
 
 ### Control Plane Nodes
 - 2 vCPU cores, 4GB RAM, 20GB disk each
-- IPs: `10.10.210.1-3`
-- Virtual IP: `10.10.210.210`
+- IPs: 3 IP addresses for the control plane nodes
+- Virtual IP: 1 separate IP address for the control plane VIP
 
 ### Worker Nodes
 - 4 vCPU cores, 4GB RAM, 20GB disk each
-- IPs: `10.10.210.5-7`
+- IPs: 3 IP addresses for the worker nodes
 
 ## Prerequisites
 
-- Proxmox VE cluster accessible at `10.10.200.1:8006`
+- Proxmox VE cluster
 - Terraform >= 1.13.3
-- Network gateway at `10.10.10.1`
-- ProxStorage datastore configured
+- Proxmox datastore configured
+- Network access to your Proxmox environment
+
+## Project Structure
+
+```
+.
+├── cluster.tf              # Talos cluster configuration
+├── files.tf                # Talos image download
+├── main.tf                 # Provider configuration
+├── providers.tf            # Provider versions
+├── variables.tf            # Variable declarations
+├── virtual_machines.tf     # VM definitions
+├── terraform.tfvars.example # Configuration template
+├── terraform.tfvars        # Your actual values (gitignored)
+└── templates/
+    └── cpnetwork.yaml.tmpl # Network configuration patch
+```
 
 ## Providers
 
 - `bpg/proxmox` v0.84.1
 - `siderolabs/talos` v0.9.0
+- `hashicorp/null` - provider for specific use cases that intentionally does nothing
+
+## Setup
+
+```bash
+# Copy the example configuration
+cp terraform.tfvars.example terraform.tfvars
+
+# Edit with your environment-specific values
+vim terraform.tfvars
+```
+
+Update `terraform.tfvars` with your actual IP addresses, Proxmox endpoint, and other environment-specific settings.
 
 ## Deployment
 
@@ -52,20 +83,24 @@ chmod 600 ~/.kube/config ~/.talos/config
 
 ## Configuration
 
-Default values are defined in `variables.tf`. Override as needed:
-
-```bash
-terraform apply -var="kubernetes_version=1.35.0" -var="cluster_name=production"
-```
+All environment-specific values are configured in `terraform.tfvars` (not committed to version control). Variable declarations and defaults for non-sensitive values are in `variables.tf`.
 
 ## Key Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `cluster_name` | homelab | Cluster identifier |
-| `talos_version` | v1.11.2 | Talos Linux version |
-| `kubernetes_version` | 1.34.0 | Kubernetes version |
-| `cp_vip` | 10.10.210.210 | Control plane VIP |
+Configure these in `terraform.tfvars`:
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `cluster_name` | Cluster identifier | homelab |
+| `proxmox_endpoint` | Proxmox API endpoint | https://10.x.x.x:8006/ |
+| `default_gateway` | Network gateway | 10.x.x.x |
+| `talos_cp_0X_ip_addr` | Control plane node IPs | 10.x.x.x |
+| `talos_worker_0X_ip_addr` | Worker node IPs | 10.x.x.x |
+| `cp_vip` | Control plane virtual IP | 10.x.x.x |
+| `talos_version` | Talos Linux version | v1.11.2 |
+| `kubernetes_version` | Kubernetes version | 1.34.0 |
+
+See `terraform.tfvars.example` for a complete template.
 
 ## Network Configuration
 
