@@ -1,0 +1,51 @@
+variable "proxmox_endpoint" {
+  type          = string
+  description   = "Proxmox API endpoint"
+}
+
+variable "default_gateway" {
+  type          = string
+  description   = "Network gateway IP"
+}
+
+variable "cluster_name" {
+    type        = string
+}
+
+variable "talos_cp_01_ip_addr" {
+    type        = string
+}
+
+variable "talos_cp_02_ip_addr" {
+  type    = string
+}
+
+variable "talos_cp_03_ip_addr" {
+  type    = string
+}
+
+variable "talos_worker_01_ip_addr" {
+    type        = string
+}
+
+variable "talos_worker_02_ip_addr" {
+  type    = string
+}
+
+variable "talos_worker_03_ip_addr" {
+  type    = string
+}
+
+variable "cp_vip" {
+  type    = string
+}
+
+variable "talos_version" {
+  type    = string
+  default = "v1.11.2"
+}
+
+variable "kubernetes_version" {
+  type    = string
+  default = "1.34.0"
+}
