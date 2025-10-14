@@ -1,0 +1,20 @@
+---
+- name: Verify RKE2 Cluster
+  hosts: rke2-cp-01
+  become: true
+  tasks:
+    - name: Check cluster nodes
+      ansible.builtin.shell: /var/lib/rancher/rke2/bin/kubectl --kubeconfig /etc/rancher/rke2/rke2.yaml get nodes
+      register: cluster_nodes
+      changed_when: false
+
+    - name: Display cluster nodes
+      ansible.builtin.debug:
+        var: cluster_nodes.stdout_lines
+
+    - name: Check all nodes are Ready
+      ansible.builtin.shell: |
+        /var/lib/rancher/rke2/bin/kubectl --kubeconfig /etc/rancher/rke2/rke2.yaml get nodes --no-headers | grep -v Ready | wc -l
+      register: not_ready_nodes
+      changed_when: false
+      failed_when: not_ready_nodes.stdout != "0"

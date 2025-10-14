@@ -1,0 +1,219 @@
+---
+- name: Install HAProxy
+  hosts: haproxy-01
+  tags: ['haproxy', 'infrastructure']
+  become: true
+  tasks:
+    - name: Install the latest HAProxy packages
+      ansible.builtin.apt:
+        name: haproxy
+        state: present
+        update_cache: true
+
+    - name: Create HAProxy config file
+      ansible.builtin.template:
+        src: templates/haproxy.cfg.tmpl
+        dest: /etc/haproxy/haproxy.cfg
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Enable and start haproxy service
+      ansible.builtin.systemd:
+        name: haproxy
+        enabled: true
+        state: started
+    
+    - name: Validate HAProxy configuration
+      ansible.builtin.command: haproxy -c -f /etc/haproxy/haproxy.cfg
+      register: haproxy_validation
+      changed_when: false
+      failed_when: haproxy_validation.rc != 0
+
+    - name: Restart HAProxy if config changed
+      ansible.builtin.systemd:
+        name: haproxy
+        state: restarted
+      when: haproxy_validation is succeeded
+
+- name: Install RKE2 Server on primary control plane
+  hosts: rke2-cp-01
+  tags: ['rke2', 'control-plane', 'primary']
+  remote_user: ubuntu
+  become: true
+  tasks:
+    - name: Download RKE2 installation script
+      ansible.builtin.get_url:
+        url: https://get.rke2.io
+        dest: /tmp/install.sh
+        mode: '0755'
+
+    - name: Ensure RKE2 config directory exists
+      ansible.builtin.file:
+        path: /etc/rancher/rke2
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Create RKE2 config file
+      ansible.builtin.copy:
+        content: |
+          tls-san:
+            - 10.10.209.1
+            - 10.10.209.2
+            - 10.10.209.3
+            - 10.10.209.25
+        dest: /etc/rancher/rke2/config.yaml
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: Install RKE2 Server
+      ansible.builtin.shell: |
+        /tmp/install.sh
+      when: "'rke2-server.service' not in services"
+      changed_when: true
+
+    - name: Enable and start rke2-server service
+      ansible.builtin.systemd:
+        name: rke2-server
+        enabled: true
+        state: started
+
+    - name: Wait for node-token to be created
+      ansible.builtin.wait_for:
+        path: /var/lib/rancher/rke2/server/node-token
+        timeout: 300
+
+    - name: Read the node token
+      ansible.builtin.slurp:
+        src: /var/lib/rancher/rke2/server/node-token
+      register: node_token_raw
+
+    - name: Set token fact
+      ansible.builtin.set_fact:
+        rke2_token: "{{ node_token_raw.content | b64decode | trim }}"
+
+- name: Install RKE2 on secondary control planes
+  hosts: secondary_cp
+  tags: ['rke2', 'control-plane', 'secondary']
+  remote_user: ubuntu
+  become: true
+  tasks:
+    - name: Download RKE2 installation script
+      ansible.builtin.get_url:
+        url: https://get.rke2.io
+        dest: /tmp/install.sh
+        mode: '0755'
+
+    - name: Ensure RKE2 config directory exists
+      ansible.builtin.file:
+        path: /etc/rancher/rke2
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Create RKE2 config file
+      ansible.builtin.copy:
+        content: |
+          server: https://10.10.209.1:9345
+          token: {{ hostvars['rke2-cp-01']['rke2_token'] }}
+          tls-san:
+            - 10.10.209.1
+            - 10.10.209.2
+            - 10.10.209.3
+            - 10.10.209.25
+        dest: /etc/rancher/rke2/config.yaml
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: Install RKE2 Server
+      ansible.builtin.shell: |
+        /tmp/install.sh
+      when: "'rke2-server.service' not in services"
+      changed_when: true
+
+    - name: Enable and start rke2-server service
+      ansible.builtin.systemd:
+        name: rke2-server
+        enabled: true
+        state: started
+
+- name: Install RKE2 on workers
+  hosts: workers
+  tags: ['rke2', 'workers']
+  remote_user: ubuntu
+  become: true
+  tasks:
+    - name: Download RKE2 installation script
+      ansible.builtin.get_url:
+        url: https://get.rke2.io
+        dest: /tmp/install.sh
+        mode: '0755'
+
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: Install RKE2 Agent
+      ansible.builtin.shell: |
+        /tmp/install.sh
+      environment:
+        INSTALL_RKE2_TYPE: "agent"
+      when: "'rke2-agent.service' not in services"
+      changed_when: true
+
+    - name: Ensure RKE2 config directory exists
+      ansible.builtin.file:
+        path: /etc/rancher/rke2
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Create RKE2 config file
+      ansible.builtin.copy:
+        content: |
+          server: https://10.10.209.1:9345
+          token: {{ hostvars['rke2-cp-01']['rke2_token'] }}
+        dest: /etc/rancher/rke2/config.yaml
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Enable and start rke2-agent service
+      ansible.builtin.systemd:
+        name: rke2-agent
+        enabled: true
+        state: started
+
+- name: Fetch kubeconfig
+  hosts: rke2-cp-01
+  tags: ['kubeconfig']
+  become: true
+  tasks:
+    - name: Wait for kubeconfig to be created
+      ansible.builtin.wait_for:
+        path: /etc/rancher/rke2/rke2.yaml
+        timeout: 300
+
+    - name: Fetch kubeconfig from primary control plane
+      ansible.builtin.fetch:
+        src: /etc/rancher/rke2/rke2.yaml
+        dest: ./.kube/config
+        flat: yes
+
+    - name: Update kubeconfig server address
+      ansible.builtin.replace:
+        path: ./.k8s/config
+        regexp: 'https://127\.0\.0\.1:6443'
+        replace: 'https://10.10.209.25:6443'  # Your HAProxy address
+      delegate_to: localhost
