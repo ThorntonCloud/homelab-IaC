@@ -213,7 +213,7 @@
 
     - name: Update kubeconfig server address
       ansible.builtin.replace:
-        path: ./.k8s/config
+        path: ./.kube/config
         regexp: 'https://127\.0\.0\.1:6443'
         replace: 'https://10.10.209.25:6443'  # Your HAProxy address
       delegate_to: localhost
