@@ -20,6 +20,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+            node-version: 'lts/*''
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
