@@ -1,0 +1,70 @@
+# .github/workflows/terraform-apply.yaml
+name: Deploy Talos Cluster
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'Talos/**'
+  workflow_dispatch:  # Allows manual triggering from GitHub UI
+
+jobs:
+  terraform:
+    runs-on: arc-runner-set
+    defaults:
+      run:
+        working-directory: ./Talos/terraform
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.13.3 
+
+      - name: Create terraform.tfvars
+        run: |
+          cat > terraform.tfvars <<EOF
+          cluster_name            = "${{ secrets.CLUSTER_NAME }}"
+          default_gateway         = "${{ secrets.DEFAULT_GATEWAY }}"
+          talos_cidr              = "${{ secrets.TALOS_CIDR }}"
+          talos_cp_01_ip_addr     = "${{ secrets.TALOS_CP_01_IP }}"
+          talos_cp_02_ip_addr     = "${{ secrets.TALOS_CP_02_IP }}"
+          talos_cp_03_ip_addr     = "${{ secrets.TALOS_CP_03_IP }}"
+          talos_worker_01_ip_addr = "${{ secrets.TALOS_WORKER_01_IP }}"
+          talos_worker_02_ip_addr = "${{ secrets.TALOS_WORKER_02_IP }}"
+          talos_worker_03_ip_addr = "${{ secrets.TALOS_WORKER_03_IP }}"
+          cp_vip                  = "${{ secrets.CP_VIP }}"
+          proxmox_endpoint        = "${{ secrets.PROXMOX_ENDPOINT }}"
+          api_token               = "${{ secrets.PROXMOX_API_TOKEN }}"
+          EOF
+
+      - name: Terraform Init
+        id: init
+        run: terraform init
+
+      - name: Terraform Format Check
+        id: fmt
+        run: terraform fmt -check
+        continue-on-error: true
+
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -out=tfplan
+
+      - name: Terraform Apply
+        id: apply
+        run: terraform apply -auto-approve tfplan
+
+      - name: Output Apply Results
+        if: always()
+        run: |
+          echo "## Terraform Apply Results" >> $GITHUB_STEP_SUMMARY
+          echo "Status: ${{ steps.apply.outcome }}" >> $GITHUB_STEP_SUMMARY

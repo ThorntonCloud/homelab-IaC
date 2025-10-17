@@ -250,6 +250,11 @@ terraform apply
 3. Update `cluster.tf` to include new workers in machine secrets
 4. Apply Terraform changes: `terraform apply`
 
+### Extract credentials
+terraform output -raw kubeconfig > ~/.kube/config
+terraform output -raw talosconfig > ~/.talos/config
+chmod 600 ~/.kube/config ~/.talos/config
+
 ### Accessing Node Console
 
 Use talosctl to access the node console:

@@ -3,9 +3,18 @@ variable "proxmox_endpoint" {
   description   = "Proxmox API endpoint"
 }
 
+variable "api_token" {
+  type          = string
+  description   = "Proxmox user + API Token"
+}
+
 variable "default_gateway" {
   type          = string
   description   = "Network gateway IP"
+}
+
+variable "talos_cidr" {
+  type          = string
 }
 
 variable "cluster_name" {

@@ -13,7 +13,7 @@ resource "proxmox_virtual_environment_vm" "ubuntu_cp_01" {
     datastore_id = "ProxStorage"
     ip_config {
       ipv4 {
-        address = "${var.ubuntu_cp_01_ip_addr}/24"
+        address = "${var.ubuntu_cp_01_ip_addr}/${var.rke2_cidr}"
         gateway = var.default_gateway
       }
     }
@@ -62,7 +62,7 @@ resource "proxmox_virtual_environment_vm" "ubuntu_cp_02" {
     datastore_id = "ProxStorage"
     ip_config {
       ipv4 {
-        address = "${var.ubuntu_cp_02_ip_addr}/24"
+        address = "${var.ubuntu_cp_02_ip_addr}/${var.rke2_cidr}"
         gateway = var.default_gateway
       }
     }
@@ -111,7 +111,7 @@ resource "proxmox_virtual_environment_vm" "ubuntu_cp_03" {
     datastore_id = "ProxStorage"
     ip_config {
       ipv4 {
-        address = "${var.ubuntu_cp_03_ip_addr}/24"
+        address = "${var.ubuntu_cp_03_ip_addr}/${var.rke2_cidr}"
         gateway = var.default_gateway
       }
     }
@@ -185,7 +185,7 @@ resource "proxmox_virtual_environment_vm" "ubuntu_worker_01" {
     datastore_id = "ProxStorage"
     ip_config {
       ipv4 {
-        address = "${var.ubuntu_worker_01_ip_addr}/24"
+        address = "${var.ubuntu_worker_01_ip_addr}/${var.rke2_cidr}"
         gateway = var.default_gateway
       }
     }
@@ -233,7 +233,7 @@ resource "proxmox_virtual_environment_vm" "ubuntu_worker_02" {
     datastore_id = "ProxStorage"
     ip_config {
       ipv4 {
-        address = "${var.ubuntu_worker_02_ip_addr}/24"
+        address = "${var.ubuntu_worker_02_ip_addr}/${var.rke2_cidr}"
         gateway = var.default_gateway
       }
     }
@@ -281,7 +281,7 @@ resource "proxmox_virtual_environment_vm" "ubuntu_worker_03" {
     datastore_id = "ProxStorage"
     ip_config {
       ipv4 {
-        address = "${var.ubuntu_worker_03_ip_addr}/24"
+        address = "${var.ubuntu_worker_03_ip_addr}/${var.rke2_cidr}"
         gateway = var.default_gateway
       }
     }
@@ -329,7 +329,7 @@ resource "proxmox_virtual_environment_vm" "ubuntu_haproxy_01" {
     datastore_id = "ProxStorage"
     ip_config {
       ipv4 {
-        address = "${var.ubuntu_haproxy_01_ip_addr}/24"
+        address = "${var.ubuntu_haproxy_01_ip_addr}/${var.rke2_cidr}"
         gateway = var.default_gateway
       }
     }

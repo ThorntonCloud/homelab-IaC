@@ -1,5 +1,7 @@
 proxmox_endpoint            = "https://<pve_IP_ADDR>:8006/"
+api_token                   = "user@pve!token=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 default_gateway             = "10.x.x.x"
+rke2_cidr                   = 24
 ubuntu_cp_01_ip_addr        = "10.x.x.x"
 ubuntu_cp_02_ip_addr        = "10.x.x.x"
 ubuntu_cp_03_ip_addr        = "10.x.x.x"
