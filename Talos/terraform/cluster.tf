@@ -36,13 +36,13 @@ data "talos_machine_configuration" "machineconfig_cp_03" {
 
 # Apply Comtrol Plane Configurations
 resource "talos_machine_configuration_apply" "cp_config_apply" {
-  depends_on                  = [ proxmox_virtual_environment_vm.talos_cp_01 ]
+  depends_on                  = [proxmox_virtual_environment_vm.talos_cp_01]
   client_configuration        = talos_machine_secrets.machine_secrets.client_configuration
   machine_configuration_input = data.talos_machine_configuration.machineconfig_cp.machine_configuration
   node                        = var.talos_cp_01_ip_addr
   config_patches = [
     templatefile("./templates/cpnetwork.yaml.tmpl", {
-      cpip = var.cp_vip,
+      cpip   = var.cp_vip,
       nodeip = var.talos_cp_01_ip_addr
     })
   ]
@@ -55,7 +55,7 @@ resource "talos_machine_configuration_apply" "cp_config_apply_02" {
   node                        = var.talos_cp_02_ip_addr
   config_patches = [
     templatefile("./templates/cpnetwork.yaml.tmpl", {
-      cpip = var.cp_vip,
+      cpip   = var.cp_vip,
       nodeip = var.talos_cp_02_ip_addr
     })
   ]
@@ -68,7 +68,7 @@ resource "talos_machine_configuration_apply" "cp_config_apply_03" {
   node                        = var.talos_cp_03_ip_addr
   config_patches = [
     templatefile("./templates/cpnetwork.yaml.tmpl", {
-      cpip = var.cp_vip,
+      cpip   = var.cp_vip,
       nodeip = var.talos_cp_03_ip_addr
     })
   ]
@@ -120,7 +120,7 @@ resource "talos_machine_configuration_apply" "worker_config_apply_03" {
 
 # Bootstrap Control Plane
 resource "talos_machine_bootstrap" "bootstrap" {
-  depends_on           = [ talos_machine_configuration_apply.cp_config_apply ]
+  depends_on           = [talos_machine_configuration_apply.cp_config_apply]
   client_configuration = talos_machine_secrets.machine_secrets.client_configuration
   node                 = var.talos_cp_01_ip_addr
 }
@@ -151,19 +151,19 @@ data "talos_cluster_health" "health" {
 
 # Retrieve Kubeconfig
 data "talos_cluster_kubeconfig" "kubeconfig" {
-  depends_on           = [ talos_machine_bootstrap.bootstrap, data.talos_cluster_health.health ]
+  depends_on           = [talos_machine_bootstrap.bootstrap, data.talos_cluster_health.health]
   client_configuration = talos_machine_secrets.machine_secrets.client_configuration
   node                 = var.talos_cp_01_ip_addr
 }
 
 # Outputs
 output "talosconfig" {
-  value = data.talos_client_configuration.talosconfig.talos_config
+  value     = data.talos_client_configuration.talosconfig.talos_config
   sensitive = true
 }
 
 output "kubeconfig" {
-  value = data.talos_cluster_kubeconfig.kubeconfig.kubeconfig_raw
+  value     = data.talos_cluster_kubeconfig.kubeconfig.kubeconfig_raw
   sensitive = true
 }
 

@@ -1,13 +1,13 @@
 resource "proxmox_virtual_environment_vm" "talos_cp_01" {
-  name          = "talos-cp-01"
-  description   = "Managed by Terraform"
-  tags          = ["terraform"]
-  node_name     = "pve"
-  on_boot       = true
+  name        = "talos-cp-01"
+  description = "Managed by Terraform"
+  tags        = ["terraform"]
+  node_name   = "pve"
+  on_boot     = true
 
   cpu {
     cores = 2
-    type = "x86-64-v2-AES"
+    type  = "x86-64-v2-AES"
   }
 
   memory {
@@ -24,10 +24,10 @@ resource "proxmox_virtual_environment_vm" "talos_cp_01" {
 
   disk {
     datastore_id = "ProxStorage"
-    file_id     = proxmox_virtual_environment_download_file.talos_nocloud_image.id
-    file_format = "raw"
-    interface   = "virtio0"
-    size        = 20
+    file_id      = proxmox_virtual_environment_download_file.talos_nocloud_image.id
+    file_format  = "raw"
+    interface    = "virtio0"
+    size         = 20
   }
 
   operating_system {
@@ -148,17 +148,17 @@ resource "proxmox_virtual_environment_vm" "talos_cp_03" {
   }
 }
 
-resource  "proxmox_virtual_environment_vm" "talos_worker_01" {
-  depends_on    = [ proxmox_virtual_environment_vm.talos_cp_01 ]
-  name          = "talos-worker-01"
-  description   = "Managed by Terraform"
-  tags          = ["terraform"]
-  node_name     = "pve"
-  on_boot       = true
+resource "proxmox_virtual_environment_vm" "talos_worker_01" {
+  depends_on  = [proxmox_virtual_environment_vm.talos_cp_01]
+  name        = "talos-worker-01"
+  description = "Managed by Terraform"
+  tags        = ["terraform"]
+  node_name   = "pve"
+  on_boot     = true
 
   cpu {
     cores = 4
-    type = "x86-64-v2-AES"
+    type  = "x86-64-v2-AES"
   }
 
   memory {
@@ -174,11 +174,11 @@ resource  "proxmox_virtual_environment_vm" "talos_worker_01" {
   }
 
   disk {
-    datastore_id    = "ProxStorage"
-    file_id         = proxmox_virtual_environment_download_file.talos_nocloud_image.id
-    file_format     = "raw"
-    interface       = "virtio0"
-    size            = 20
+    datastore_id = "ProxStorage"
+    file_id      = proxmox_virtual_environment_download_file.talos_nocloud_image.id
+    file_format  = "raw"
+    interface    = "virtio0"
+    size         = 20
   }
 
   operating_system {
@@ -199,17 +199,17 @@ resource  "proxmox_virtual_environment_vm" "talos_worker_01" {
   }
 }
 
-resource  "proxmox_virtual_environment_vm" "talos_worker_02" {
-  depends_on    = [ proxmox_virtual_environment_vm.talos_cp_02 ]
-  name          = "talos-worker-02"
-  description   = "Managed by Terraform"
-  tags          = ["terraform"]
-  node_name     = "pve"
-  on_boot       = true
+resource "proxmox_virtual_environment_vm" "talos_worker_02" {
+  depends_on  = [proxmox_virtual_environment_vm.talos_cp_02]
+  name        = "talos-worker-02"
+  description = "Managed by Terraform"
+  tags        = ["terraform"]
+  node_name   = "pve"
+  on_boot     = true
 
   cpu {
     cores = 4
-    type = "x86-64-v2-AES"
+    type  = "x86-64-v2-AES"
   }
 
   memory {
@@ -225,11 +225,11 @@ resource  "proxmox_virtual_environment_vm" "talos_worker_02" {
   }
 
   disk {
-    datastore_id    = "ProxStorage"
-    file_id         = proxmox_virtual_environment_download_file.talos_nocloud_image.id
-    file_format     = "raw"
-    interface       = "virtio0"
-    size            = 20
+    datastore_id = "ProxStorage"
+    file_id      = proxmox_virtual_environment_download_file.talos_nocloud_image.id
+    file_format  = "raw"
+    interface    = "virtio0"
+    size         = 20
   }
 
   operating_system {
@@ -250,17 +250,17 @@ resource  "proxmox_virtual_environment_vm" "talos_worker_02" {
   }
 }
 
-resource  "proxmox_virtual_environment_vm" "talos_worker_03" {
-  depends_on    = [ proxmox_virtual_environment_vm.talos_cp_03 ]
-  name          = "talos-worker-03"
-  description   = "Managed by Terraform"
-  tags          = ["terraform"]
-  node_name     = "pve"
-  on_boot       = true
+resource "proxmox_virtual_environment_vm" "talos_worker_03" {
+  depends_on  = [proxmox_virtual_environment_vm.talos_cp_03]
+  name        = "talos-worker-03"
+  description = "Managed by Terraform"
+  tags        = ["terraform"]
+  node_name   = "pve"
+  on_boot     = true
 
   cpu {
     cores = 4
-    type = "x86-64-v2-AES"
+    type  = "x86-64-v2-AES"
   }
 
   memory {
@@ -276,11 +276,11 @@ resource  "proxmox_virtual_environment_vm" "talos_worker_03" {
   }
 
   disk {
-    datastore_id    = "ProxStorage"
-    file_id         = proxmox_virtual_environment_download_file.talos_nocloud_image.id
-    file_format     = "raw"
-    interface       = "virtio0"
-    size            = 20
+    datastore_id = "ProxStorage"
+    file_id      = proxmox_virtual_environment_download_file.talos_nocloud_image.id
+    file_format  = "raw"
+    interface    = "virtio0"
+    size         = 20
   }
 
   operating_system {
