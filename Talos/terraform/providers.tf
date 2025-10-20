@@ -1,6 +1,13 @@
 terraform {
   required_version = ">= 1.13.3"
 
+  cloud {
+    organization = "ThorntonCloud"
+    workspaces {
+      name = "talos-cluster"
+    }
+  }
+
   required_providers {
     proxmox = {
       source  = "bpg/proxmox"
