@@ -38,6 +38,6 @@ resource "null_resource" "argocd_bootstrap" {
   }
 
   triggers = {
-    root_app = filesha256("${path.module}/../../../ArgoCD/bootstrap/root-app.yaml")
+    root_app = filesha256("../../../ArgoCD/bootstrap/root-app.yaml")
   }
 }
