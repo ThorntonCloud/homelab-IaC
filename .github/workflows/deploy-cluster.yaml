@@ -66,18 +66,6 @@ jobs:
         id: apply
         run: terraform apply -auto-approve tfplan
 
-      - name: Save kubeconfig
-        run: |
-          mkdir -p ~/.k8s
-          terraform output -raw kubeconfig > ~/.k8s/kubeconfig
-          chmod 600 ~/.k8s/kubeconfig
-
-      - name: Upload kubeconfig
-        uses: actions/upload-artifact@v4
-        with:
-          name: kubeconfig
-          path: ~/.k8s/kubeconfig
-
       - name: Output Apply Results
         if: always()
         run: |

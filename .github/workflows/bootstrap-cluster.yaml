@@ -39,17 +39,16 @@ jobs:
             | tar xz --strip-components=1 -C ~/.local/bin gh_*/bin/gh
           echo "$HOME/.local/bin" >> $GITHUB_PATH
       
-      - name: Download kubeconfig artifact
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          OWNER: ${{ github.repository_owner }}
-          REPO: ${{ github.event.repository.name }}
-          RUN_ID: ${{ github.event.workflow_run.id }}
+      - name: Get kubeconfig from cluster
+        working-directory: ../../terraform
         run: |
-          mkdir -p /tmp
-          ARTIFACT_ID=$(gh api repos/$OWNER/$REPO/actions/runs/$RUN_ID/artifacts --jq '.artifacts[] | select(.name=="kubeconfig") | .id')
-          gh api repos/$OWNER/$REPO/actions/artifacts/$ARTIFACT_ID/zip -o /tmp/kubeconfig.zip
-          unzip /tmp/kubeconfig.zip -d /tmp
+          terraform init
+          mkdir -p ~/.kube
+          terraform output -raw kubeconfig > ~/.kube/config
+          chmod 600 ~/.kube/config
+          
+          # Verify it works
+          kubectl cluster-info
 
       - run: terraform init
       - run: terraform validate
