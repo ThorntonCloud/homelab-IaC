@@ -1,4 +1,3 @@
-# Talos/bootstrap/terraform/argocd.tf
 resource "kubernetes_namespace" "argocd" {
   metadata {
     name = "argocd"
@@ -33,7 +32,7 @@ resource "null_resource" "argocd_bootstrap" {
   provisioner "local-exec" {
     command = <<-EOT
       kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=argocd-server -n argocd --timeout=300s
-      kubectl apply -f ${path.module}/../../../ArgoCD/bootstrap/root-app.yaml
+      kubectl apply -f ../../../ArgoCD/bootstrap/root-app.yaml
       echo "GitOps bootstrap complete! Argo CD is now managing the cluster."
     EOT
   }
