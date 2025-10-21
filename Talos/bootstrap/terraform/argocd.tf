@@ -36,8 +36,4 @@ resource "null_resource" "argocd_bootstrap" {
       echo "GitOps bootstrap complete! Argo CD is now managing the cluster."
     EOT
   }
-
-  triggers = {
-    root_app = filesha256("../../../ArgoCD/bootstrap/root-app.yaml")
-  }
 }
