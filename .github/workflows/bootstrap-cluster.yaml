@@ -32,15 +32,12 @@ jobs:
           terraform_version: 1.13.3
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
-      - name: Install GitHub CLI
+      - name: Install GitHub CLI (non-root)
         run: |
-          type -p curl >/dev/null || (apt update && apt install -y curl)
-          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | \
-            gpg --dearmor -o /usr/share/keyrings/githubcli-archive-keyring.gpg
-          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] \
-            https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null
-          apt update
-          apt install -y gh
+          mkdir -p ~/.local/bin
+          curl -fsSL https://github.com/cli/cli/releases/latest/download/gh_$(uname -s | tr '[:upper:]' '[:lower:]')_amd64.tar.gz \
+            | tar xz --strip-components=1 -C ~/.local/bin gh_*/bin/gh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
       
       - name: Download kubeconfig artifact
         env:
