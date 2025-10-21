@@ -1,3 +1,19 @@
+resource "kubernetes_namespace" "argocd" {
+  metadata {
+    name = "argocd"
+    labels = {
+      "pod-security.kubernetes.io/enforce" = "baseline"
+      "pod-security.kubernetes.io/audit"   = "restricted"
+      "pod-security.kubernetes.io/warn"    = "restricted"
+    }
+  }
+  
+  depends_on = [
+    talos_cluster_kubeconfig.kubeconfig,
+    data.talos_cluster_health.health
+  ]
+}
+
 resource "helm_release" "argocd" {
   name             = "argocd"
   repository       = "https://argoproj.github.io/argo-helm"
@@ -10,9 +26,13 @@ resource "helm_release" "argocd" {
     file("${path.module}/argocd-values.yaml")
   ]
 
+  timeout       = 600
+
+  wait          = true
+  wait_for_jobs = false
+
   depends_on = [
-    talos_cluster_kubeconfig.kubeconfig,
-    data.talos_cluster_health.health
+    kubernetes_namespace.argocd
   ]
 }
 
@@ -20,6 +40,10 @@ resource "local_sensitive_file" "kubeconfig" {
   content         = talos_cluster_kubeconfig.kubeconfig.kubeconfig_raw
   filename        = "${path.module}/kubeconfig"
   file_permission = "0600"
+
+  depends_on = [
+    talos_cluster_kubeconfig.kubeconfig
+  ]
 }
 
 resource "null_resource" "argocd_bootstrap" {
@@ -54,4 +78,11 @@ provider "helm" {
     client_key             = base64decode(yamldecode(talos_cluster_kubeconfig.kubeconfig.kubeconfig_raw).users[0].user["client-key-data"])
     cluster_ca_certificate = base64decode(yamldecode(talos_cluster_kubeconfig.kubeconfig.kubeconfig_raw).clusters[0].cluster["certificate-authority-data"])
   }
+}
+
+provider "kubernetes" {
+  host                   = yamldecode(talos_cluster_kubeconfig.kubeconfig.kubeconfig_raw).clusters[0].cluster.server
+  client_certificate     = base64decode(yamldecode(talos_cluster_kubeconfig.kubeconfig.kubeconfig_raw).users[0].user["client-certificate-data"])
+  client_key             = base64decode(yamldecode(talos_cluster_kubeconfig.kubeconfig.kubeconfig_raw).users[0].user["client-key-data"])
+  cluster_ca_certificate = base64decode(yamldecode(talos_cluster_kubeconfig.kubeconfig.kubeconfig_raw).clusters[0].cluster["certificate-authority-data"])
 }
