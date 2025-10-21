@@ -24,10 +24,10 @@ terraform {
 # This workspace expects kubeconfig to exist
 provider "helm" {
   kubernetes = {
-    config_path = pathexpand("~/.k8s/kubeconfig")
+    config_path = pathexpand("/tmp/kubeconfig")
   }
 }
 
 provider "kubernetes" {
-  config_path = pathexpand("~/.k8s/kubeconfig")
+  config_path = pathexpand("/tmp/kubeconfig")
 }
