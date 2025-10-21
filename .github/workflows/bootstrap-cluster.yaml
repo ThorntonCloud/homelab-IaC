@@ -32,14 +32,13 @@ jobs:
           terraform_version: 1.13.3
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
       
-      # Get kubeconfig from cluster deployment
-      - name: Setup kubeconfig
-        working-directory: ./Talos/terraform
-        run: |
-          terraform init
-          mkdir -p ~/.k8s
-          terraform output -raw kubeconfig > ~/.k8s/config
-          chmod 600 ~/.k8s/config
+      - name: Download kubeconfig artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: kubeconfig
+          path: /tmp
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GH_TOKEN }}
 
       - run: terraform init
       - run: terraform validate
