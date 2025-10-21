@@ -31,14 +31,28 @@ jobs:
         with:
           terraform_version: 1.13.3
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+      - name: Install GitHub CLI
+        run: |
+          type -p curl >/dev/null || (apt update && apt install -y curl)
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | \
+            gpg --dearmor -o /usr/share/keyrings/githubcli-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] \
+            https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+          apt update
+          apt install -y gh
       
       - name: Download kubeconfig artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: kubeconfig
-          path: /tmp
-          run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ secrets.GH_TOKEN }}
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.event.repository.name }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          mkdir -p /tmp
+          ARTIFACT_ID=$(gh api repos/$OWNER/$REPO/actions/runs/$RUN_ID/artifacts --jq '.artifacts[] | select(.name=="kubeconfig") | .id')
+          gh api repos/$OWNER/$REPO/actions/artifacts/$ARTIFACT_ID/zip -o /tmp/kubeconfig.zip
+          unzip /tmp/kubeconfig.zip -d /tmp
 
       - run: terraform init
       - run: terraform validate
