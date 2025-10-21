@@ -1,0 +1,47 @@
+name: Bootstrap ArgoCD
+
+on:
+  workflow_run:
+    workflows:
+      - "Deploy Talos Cluster"
+    types:
+      - completed
+    branches:
+    - main
+  push:
+    branches:
+      - main
+    paths: ['Talos/bootstrap/**', 'ArgoCD/bootstrap/**']
+  workflow_dispatch:
+
+jobs:
+  bootstrap-argocd:
+    runs-on: arc-runner-set
+    if: ${{ github.event.workflow_run.conclusion == 'success' || gitub.event_name != 'workflow_run' }}
+    defaults:
+      run:
+        working-directory: ./Talos/bootstrap/terraform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+      
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.13.3
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+      
+      # Get kubeconfig from cluster deployment
+      - name: Setup kubeconfig
+        working-directory: ./Talos/terraform
+        run: |
+          terraform init
+          mkdir -p ~/.k8s
+          terraform output -raw kubeconfig > ~/.k8s/config
+          chmod 600 ~/.k8s/config
+
+      - run: terraform init
+      - run: terraform validate
+      - run: terraform plan -out=tfplan
+      - run: terraform apply -auto-approve tfplan
