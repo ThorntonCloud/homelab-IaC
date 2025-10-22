@@ -39,9 +39,6 @@ jobs:
           mkdir -p ~/.kube
           terraform output -raw kubeconfig > ~/.kube/config
           chmod 600 ~/.kube/config
-          
-          # Verify it works
-          kubectl cluster-info
 
       - run: terraform init
       - run: terraform validate
