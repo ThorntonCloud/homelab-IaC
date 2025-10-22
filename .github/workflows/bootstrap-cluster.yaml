@@ -39,6 +39,7 @@ jobs:
           mkdir -p ~/.kube
           terraform output -raw kubeconfig_external > /tmp/kubeconfig
           chmod 600 /tmp/kubeconfig
+          ls -l /tmp
 
       - run: terraform init
       - run: terraform validate
