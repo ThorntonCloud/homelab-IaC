@@ -33,7 +33,7 @@ jobs:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
       
       - name: Get kubeconfig from cluster
-        working-directory: ../../terraform
+        working-directory: ./Talos/terraform
         run: |
           terraform init
           mkdir -p ~/.kube
