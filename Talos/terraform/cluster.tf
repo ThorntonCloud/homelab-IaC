@@ -170,16 +170,14 @@ output "kubeconfig" {
   sensitive = true
 }
 
-output "kubeconfig_external" {
-  description = "Kubeconfig for external access (uses VIP instead of localhost)"
-  sensitive   = true
-  value = yamlencode({
+locals {
+  kubeconfig_external = {
     apiVersion = "v1"
     kind       = "Config"
     clusters = [{
       name = var.cluster_name
       cluster = {
-        certificate-authority-data = base64encode(talos_cluster_kubeconfig.kubeconfig.kubernetes_client_configuration.ca_certificate)
+        certificate-authority-data = talos_cluster_kubeconfig.kubeconfig.kubernetes_client_configuration.ca_certificate
         server                     = "https://${var.cp_vip}:6443"
       }
     }]
@@ -194,9 +192,15 @@ output "kubeconfig_external" {
     users = [{
       name = "admin"
       user = {
-        client-certificate-data = base64encode(talos_cluster_kubeconfig.kubeconfig.kubernetes_client_configuration.client_certificate)
-        client-key-data         = base64encode(talos_cluster_kubeconfig.kubeconfig.kubernetes_client_configuration.client_key)
+        client-certificate-data = talos_cluster_kubeconfig.kubeconfig.kubernetes_client_configuration.client_certificate
+        client-key-data         = talos_cluster_kubeconfig.kubeconfig.kubernetes_client_configuration.client_key
       }
     }]
-  })
+  }
+}
+
+output "kubeconfig_external" {
+  description = "Kubeconfig for external access (uses VIP instead of localhost)"
+  sensitive   = true
+  value       = yamlencode(local.kubeconfig_external)
 }
