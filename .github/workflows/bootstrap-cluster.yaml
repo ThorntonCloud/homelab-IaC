@@ -31,13 +31,6 @@ jobs:
         with:
           terraform_version: 1.13.3
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
-
-      - name: Install GitHub CLI (non-root)
-        run: |
-          mkdir -p ~/.local/bin
-          curl -fsSL https://github.com/cli/cli/releases/latest/download/gh_$(uname -s | tr '[:upper:]' '[:lower:]')_amd64.tar.gz \
-            | tar xz --strip-components=1 -C ~/.local/bin gh_*/bin/gh
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
       
       - name: Get kubeconfig from cluster
         working-directory: ../../terraform
