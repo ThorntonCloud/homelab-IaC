@@ -40,6 +40,7 @@ jobs:
           terraform output -raw kubeconfig_external > /tmp/kubeconfig
           chmod 600 /tmp/kubeconfig
           ls -l /tmp
+          cat /tmp/kubeconfig | grep "server:"
 
       - run: terraform init
       - run: terraform validate
