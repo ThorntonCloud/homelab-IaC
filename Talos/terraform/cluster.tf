@@ -170,26 +170,33 @@ output "kubeconfig" {
   sensitive = true
 }
 
-# Custom Script for Configuration
-#resource "null_resource" "run_custom_script" {
-#  provisioner "local-exec" {
-#    command = <<EOT
-#      mkdir -p ~/.kube ~/.talos
-#      terraform output -raw kubeconfig > ~/.kube/config
-#      terraform output -raw talosconfig > ~/.talos/config
-#      chmod 600 ~/.kube/config ~/.talos/config
-#    EOT
-#  }
-#
-#  triggers = {
-#    kubeconfig  = talos_cluster_kubeconfig.kubeconfig.kubeconfig_raw
-#    talosconfig = data.talos_client_configuration.talosconfig.talos_config
-#    timestamp   = timestamp() # Ensure the resource always detects changes
-#  }
-#
-#  depends_on = [
-#    talos_cluster_kubeconfig.kubeconfig,
-#    data.talos_client_configuration.talosconfig,
-#    data.talos_cluster_health.health
-#  ]
-#}
+output "kubeconfig_external" {
+  description = "Kubeconfig for external access (uses VIP instead of localhost)"
+  sensitive   = true
+  value = yamlencode({
+    apiVersion = "v1"
+    kind       = "Config"
+    clusters = [{
+      name = var.cluster_name
+      cluster = {
+        certificate-authority-data = base64encode(talos_cluster_kubeconfig.kubeconfig.kubernetes_client_configuration.ca_certificate)
+        server                     = "https://${var.cp_vip}:6443"
+      }
+    }]
+    contexts = [{
+      name = var.cluster_name
+      context = {
+        cluster = var.cluster_name
+        user    = "admin"
+      }
+    }]
+    current-context = var.cluster_name
+    users = [{
+      name = "admin"
+      user = {
+        client-certificate-data = base64encode(talos_cluster_kubeconfig.kubeconfig.kubernetes_client_configuration.client_certificate)
+        client-key-data         = base64encode(talos_cluster_kubeconfig.kubeconfig.kubernetes_client_configuration.client_key)
+      }
+    }]
+  })
+}
