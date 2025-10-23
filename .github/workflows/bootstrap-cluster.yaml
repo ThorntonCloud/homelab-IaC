@@ -45,7 +45,7 @@ jobs:
       - name: Setup Kubectl
         uses: azure/setup-kubectl@v4
         with:
-          version:
+          version: 1.34.1
 
       - run: terraform init
       - run: terraform validate
