@@ -19,6 +19,10 @@ resource "helm_release" "argocd" {
   values = [
     file("${path.module}/argocd-values.yaml")
   ]
+
+  timeout       = 900
+  wait          = false
+  wait_for_jobs = false
 }
 
 # Apply root app to bootstrap GitOps
