@@ -41,6 +41,11 @@ jobs:
           chmod 600 /tmp/kubeconfig
           ls -l /tmp
           cat /tmp/kubeconfig | grep "server"
+      
+      - name: Setup Kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version:
 
       - run: terraform init
       - run: terraform validate
