@@ -3,25 +3,12 @@ kind: Application
 metadata:
   name: openebs
   namespace: argocd
-  annotations:
-    argocd.argoproj.io/sync-wave: "1"  # Deploy FIRST
 spec:
   project: default
   source:
-    repoURL: https://openebs.github.io/charts
-    targetRevision: 4.3.2
-    chart: openebs
-    helm:
-      values: |
-        mayastor:
-          enabled: true
-        engines:
-          local:
-            lvm:
-              enabled: true
-          replicated:
-            mayastor:
-              enabled: true
+    repoURL: https://github.com/ThorntonCloud/homelab-IaC
+    targetRevision: main
+    path: Apps/infrastructure/openebs
   destination:
     server: https://kubernetes.default.svc
     namespace: openebs
@@ -29,5 +16,3 @@ spec:
     automated:
       prune: true
       selfHeal: true
-    syncOptions:
-    - CreateNamespace=true
