@@ -3,20 +3,16 @@ kind: Application
 metadata:
   name: metallb
   namespace: argocd
-  annotations:
-    argocd.argoproj.io/sync-wave: "2"  # Deploy SECOND
 spec:
   project: default
   source:
-    repoURL: https://metallb.github.io/metallb
-    targetRevision: 0.15.2
-    chart: metallb
+    repoURL: https://github.com/ThorntonCloud/homelab-IaC
+    targetRevision: main
+    path: Apps/infrastructure/metallb
   destination:
     server: https://kubernetes.default.svc
-    namespace: metallb-system
+    namespace: metallb
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
-    syncOptions:
-    - CreateNamespace=true
