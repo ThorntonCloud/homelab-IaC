@@ -34,7 +34,7 @@ resource "null_resource" "argocd_bootstrap" {
       export KUBECONFIG=/tmp/kubeconfig
       
       kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=argocd-server -n argocd --timeout=300s
-      kubectl apply -f ../../../ArgoCD/bootstrap/root-app.yaml
+      kubectl apply -f ../../../Apps/infrastructure/root-app.yaml
       echo "GitOps bootstrap complete! Argo CD is now managing the cluster."
     EOT
   }

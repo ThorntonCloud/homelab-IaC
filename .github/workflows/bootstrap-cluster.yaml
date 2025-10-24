@@ -8,10 +8,6 @@ on:
       - completed
     branches:
     - main
-  push:
-    branches:
-      - main
-    paths: ['Talos/bootstrap/**', 'ArgoCD/bootstrap/**']
   workflow_dispatch:
 
 jobs:
