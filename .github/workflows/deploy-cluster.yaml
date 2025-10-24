@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'Talos/terraform/**'
+      - 'cluster-bootstrap/Talos/terraform/**'
   workflow_dispatch:
 
 jobs:
@@ -13,7 +13,7 @@ jobs:
     runs-on: arc-runner-set
     defaults:
       run:
-        working-directory: ./Talos/terraform
+        working-directory: ./cluster-bootstrap/Talos/terraform
     
     steps:
       - name: Checkout code

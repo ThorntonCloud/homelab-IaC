@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: https://github.com/ThorntonCloud/homelab-IaC
     targetRevision: main
-    path: Apps/infrastructure/openebs
+    path: infrastructure/openebs/manifests
   destination:
     server: https://kubernetes.default.svc
     namespace: openebs

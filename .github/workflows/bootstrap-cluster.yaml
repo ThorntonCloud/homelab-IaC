@@ -16,7 +16,7 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name != 'workflow_run' }}
     defaults:
       run:
-        working-directory: ./Talos/bootstrap/terraform
+        working-directory: ./cluster-bootstrap/Talos/argocd/terraform
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -29,7 +29,7 @@ jobs:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
       
       - name: Get kubeconfig from cluster
-        working-directory: ./Talos/terraform
+        working-directory: ./cluster-bootstrap/Talos/terraform
         run: |
           terraform init
           mkdir -p ~/.kube
