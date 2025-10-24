@@ -11,7 +11,8 @@ spec:
     path: Apps/infrastructure
     directory:
       recurse: true
-      include: 'app.yaml'
+      include: '*/app.yaml'
+      exclude: 'root-app.yaml'
   destination:
     server: https://kubernetes.default.svc
   syncPolicy:
