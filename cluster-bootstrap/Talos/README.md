@@ -1,6 +1,6 @@
 # Talos Kubernetes Cluster
 
-This project provides Infrastructure as Code (IaC) for deploying a high-availability Talos Linux Kubernetes cluster on Proxmox VE using Terraform.
+This project provides Infrastructure as Code (IaC) for deploying a high-availability Talos Linux Kubernetes cluster on Proxmox VE using Terraform, with GitOps capabilities via ArgoCD.
 
 Base project and inspiration come from [Olav](https://olav.ninja/deploying-kubernetes-cluster-on-proxmox-part-1).
 
@@ -10,15 +10,9 @@ The cluster consists of:
 - **3 Control Plane nodes** with VIP-based high availability
 - **3 Worker nodes**
 - **Virtual IP (VIP)** for control plane load balancing
+- **ArgoCD** for GitOps-based application deployment
 
 All nodes run Talos Linux, an immutable and minimal Linux distribution designed for Kubernetes.
-
-## Prerequisites
-
-- Proxmox VE server with API access
-- Terraform >= 1.13.3
-- Network with available static IP addresses (7 total: 3 control planes + 3 workers + 1 VIP)
-- Proxmox datastore configured and accessible
 
 ## Project Structure
 
@@ -37,7 +31,16 @@ Talos/
 └── README.md
 ```
 
-## Deployment Guide
+## Prerequisites
+
+- Proxmox VE server with API access
+- Terraform >= 1.13.3
+- Network with available static IP addresses (7 total: 3 control planes + 3 workers + 1 VIP)
+- Proxmox datastore configured and accessible
+
+# Deployment Guide
+
+## Phase 1: Deploy Cluster Infrastructure
 
 ### 1. Configure Terraform Variables
 
@@ -132,6 +135,7 @@ kubectl cluster-info
 
 Expected output:
 ```
+# kubectl get nodes
 NAME              STATUS   ROLES           AGE   VERSION
 talos-cp-01       Ready    control-plane   5m    v1.34.0
 talos-cp-02       Ready    control-plane   5m    v1.34.0
@@ -139,6 +143,77 @@ talos-cp-03       Ready    control-plane   5m    v1.34.0
 talos-worker-01   Ready    <none>          4m    v1.34.0
 talos-worker-02   Ready    <none>          4m    v1.34.0
 talos-worker-03   Ready    <none>          4m    v1.34.0
+
+# kubectl cluster-info
+Kubernetes control plane is running at https://10.10.210.210:6443
+CoreDNS is running at https://10.10.210.210:6443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+
+To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
+```
+
+## Phase 2: Deploy ArgoCD
+Once the cluster is running and healthy, deploy ArgoCD to enable GitOps workflows.
+
+### 1. Review ArgoCD Configuration
+The `argocd/values.yaml` file contains the Helm chart configuration. Review and customize as needed:
+```bash
+cd ../argocd
+cat values.yaml
+```
+
+### Deploy ArgoCD via Terraform
+```bash
+cd terraform
+
+# Initialize Terraform with Kubernetes provider
+terraform init
+
+# Review ArgoCD deployment plan
+terraform plan
+
+# Deploy ArgoCD
+terraform apply
+```
+
+This will:
+
+Create the argocd namespace
+Deploy ArgoCD using the official Helm chart
+Configure ArgoCD with your custom values
+
+### 3. Access ArgoCD UI
+```bash
+# Get the initial admin password
+kubectl -n argocd get secret argocd-initial-admin-secret \
+  -o jsonpath="{.data.password}" | base64 -d && echo
+
+# Port forward to access the UI
+kubectl port-forward svc/argocd-server -n argocd 8080:443 # Optional - LoadBalancer will have an external IP once Metallb is deployed
+
+# Access at: https://localhost:8080
+# Username: admin
+# Password: (from command above)
+```
+
+### 4. Configure ArgoCD CLI (optional)
+```bash
+# Arch Linux
+pacman -s argocd
+
+# curl
+curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+sudo install -m 555 argocd-linux-amd64 /usr/local/bin/argocd
+rm argocd-linux-amd64
+
+# homebrew
+brew install argocd
+# or download from: https://argo-cd.readthedocs.io/en/stable/cli_installation/
+
+# Login to ArgoCD
+argocd login localhost:8080 --username admin --password <password>
+
+# Change admin password
+argocd account update-password
 ```
 
 ## Using the Cluster
@@ -174,6 +249,46 @@ talosctl --nodes 10.10.209.11 version
 
 # View node configuration
 talosctl --nodes 10.10.209.11 get machineconfig
+```
+
+# Deploy Applications with ArgoCD
+ArgoCD enables GitOps-based application deployment. Applications are defined in Git and automatically synchronized to the cluster.
+
+```bash
+# Create an application via CLI
+argocd app create my-app \
+  --repo https://github.com/your-org/your-repo \
+  --path manifests \
+  --dest-server https://kubernetes.default.svc \
+  --dest-namespace default
+
+# Or apply via YAML
+kubectl apply -f - <<EOF
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: my-app
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/your-org/your-repo
+    targetRevision: HEAD
+    path: manifests
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+EOF
+
+# View applications
+argocd app list
+
+# Sync an application
+argocd app sync my-app
 ```
 
 ## Technical Details
@@ -212,6 +327,8 @@ The VIP provides a single endpoint for accessing the Kubernetes API across all c
 | `bpg/proxmox` | 0.84.1 | Proxmox VE resource management |
 | `siderolabs/talos` | 0.9.0 | Talos cluster configuration |
 | `hashicorp/null` | latest | Null resource operations |
+| `hashicorp/helm` | latest | Helm chart deployment |
+| `hashicorp/kubernetes` | latest | Kubernetes resource management |
 
 ## Maintenance
 
@@ -238,6 +355,16 @@ To upgrade Kubernetes:
 # Update kubernetes_version in terraform.tfvars
 kubernetes_version = "1.35.0"
 
+# Apply changes
+terraform plan
+terraform apply
+```
+
+### Upgrading ArgoCD
+```bash
+cd argocd/terraform
+
+# Update version in argocd.tf or values.yaml
 # Apply changes
 terraform plan
 terraform apply
@@ -297,6 +424,45 @@ talosctl --nodes 10.10.209.11 get vips
 talosctl --nodes 10.10.209.11,10.10.209.12,10.10.209.13 health
 ```
 
+## ArgoCD Issues
+
+### ArgoCD not deploying
+```bash
+# Check ArgoCD pods
+kubectl get pods -n argocd
+
+# View ArgoCD logs
+kubectl logs -n argocd deployment/argocd-server
+
+# Check ArgoCD application status
+kubectl get applications -n argocd
+argocd app get <app-name>
+```
+
+### Application sync failures
+```bash
+# View application sync status
+argocd app get <app-name>
+
+# View detailed sync logs
+argocd app logs <app-name>
+
+# Force sync
+argocd app sync <app-name> --force
+```
+
+### Reset admin password
+```bash
+# Delete the initial admin secret
+kubectl -n argocd delete secret argocd-initial-admin-secret
+
+# Get new password
+kubectl -n argocd get secret argocd-initial-admin-secret \
+  -o jsonpath="{.data.password}" | base64 -d
+```
+
+## Backup and Recovery
+
 ### Cluster health issues
 
 ```bash
@@ -354,10 +520,10 @@ rm -f ~/.kube/config ~/.talos/config
 
 ## Additional Features
 
-- **QEMU Guest Agent**: Enabled on all VMs for better management
 - **Auto-start on boot**: All VMs configured to start automatically
 - **Immutable infrastructure**: Talos provides an immutable OS with declarative configuration
 - **Secure by default**: Minimal attack surface with no SSH access
+- **GitOps workflow**: ArgoCD enables declarative, Git-based application management
 
 ## References
 
@@ -366,7 +532,3 @@ rm -f ~/.kube/config ~/.talos/config
 - [Talos Terraform Provider](https://registry.terraform.io/providers/siderolabs/talos/latest/docs)
 - [Kubernetes Documentation](https://kubernetes.io/docs/)
 - [Original Tutorial by Olav](https://olav.ninja/deploying-kubernetes-cluster-on-proxmox-part-1)
-
-## License
-
-This project is provided as-is for educational and operational purposes.
