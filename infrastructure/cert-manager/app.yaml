@@ -12,6 +12,11 @@ spec:
     helm:
       values: |
         installCRDs: true
+      parameters:
+      - name: extraArgs[0]
+        value: --dns01-recursive-nameservers=8.8.8.8:53,1.1.1.1:53
+      - name: extraArgs[1]
+        value: --dns01-recursive-nameservers-only
   destination:
     server: https://kubernetes.default.svc
     namespace: cert-manager
