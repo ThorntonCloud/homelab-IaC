@@ -1,0 +1,12 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wildcard-homelab-tls
+  namespace: gateway
+spec:
+  secretName: wildcard-homelab-tls
+  dnsNames:
+  - "*.thorntoncloud.com"
+  issuerRef:
+    name: homelab-issuer
+    kind: ClusterIssuer

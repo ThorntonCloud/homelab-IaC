@@ -1,6 +1,6 @@
 server:
   service:
-    type: LoadBalancer
+    type: ClusterIP
     
 configs:
   params:
