@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: <your-git-repo-url>
+    repoURL: https://github.com/ThorntonCloud/homelab-IaC
     targetRevision: HEAD
     path: infrastructure/envoy-gateway-config/manifests
   destination:
