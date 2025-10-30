@@ -15,17 +15,20 @@ A complete Kubernetes platform with automated deployment, built-in CI/CD, and in
 
 ```
 .
-├── cluster-bootstrap/          # Kubernetes cluster deployment
-│   ├── RKE2/                  # RKE2 cluster (Terraform + Ansible)
-│   └── Talos/                 # Talos Linux cluster (Terraform + ArgoCD)
-│       ├── terraform/         # Cluster infrastructure
-│       └── argocd/           # GitOps setup
-├── infrastructure/            # Core infrastructure applications
-│   ├── cert-manager/         # TLS certificate management
-│   ├── metallb/              # Bare-metal load balancer
-│   ├── openebs/              # Cloud-native storage
-│   └── root-app.yaml         # ArgoCD App-of-Apps
-└── .github/workflows/        # CI/CD automation
+├── cluster-bootstrap/            # Kubernetes cluster deployment
+│   ├── RKE2/                     # RKE2 cluster (Terraform + Ansible)
+│   └── Talos/                    # Talos Linux cluster (Terraform + ArgoCD)
+│       ├── terraform/            # Cluster infrastructure
+│       └── argocd/               # GitOps setup
+├── infrastructure/               # Core infrastructure applications
+│   ├── argocd-ingress/           # Ingress resources and config for ArgoCD
+│   ├── cert-manager/             # TLS certificate management
+│   ├── envoy-gateway-config/     # Gateway, Certificate, etc. for Ingress and TLS
+│   ├── envoy-gateway-operator/   # Envoy Gateway Helm deployment
+│   ├── metallb/                  # Bare-metal load balancer
+│   ├── openebs/                  # Cloud-native storage
+│   └── root-app.yaml             # ArgoCD App-of-Apps
+└── .github/workflows/            # CI/CD automation
 ```
 
 ## Quick Start
@@ -70,7 +73,7 @@ kubectl port-forward svc/argocd-server -n argocd 8080:443 # optional -will pick 
 # Visit: https://localhost:8080
 ```
 
-### 3. Set Up GitHub Actions Runners
+### 3. Set Up GitHub Actions Runners (optional)
 
 For CI/CD automation with self-hosted runners:
 

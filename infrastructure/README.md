@@ -11,8 +11,22 @@ The infrastructure is deployed declaratively via ArgoCD, following GitOps princi
 ```
 infrastructure/
 ├── root-app.yaml              # App-of-Apps: Manages all infrastructure apps
+├── argocd-ingress            # HTTPRoute and RefGrant for ArgoCD Ingress
+│   ├── app.yaml
+│   └── manifests
+│       ├── http-route.yaml
+│       └── reference-grant.yaml
 ├── cert-manager/
 │   └── app.yaml              # TLS certificate management
+├── envoy-gateway-config      # Ingress via Gateway API config
+│   ├── app.yaml
+│   └── manifests
+│       ├── certificate.yaml
+│       ├── cluster-issuer.yaml
+│       ├── gateway-class.yaml
+│       └── gateway.yaml
+├── envoy-gateway-operator    # Envoy Gateway application via Helm
+│   └── app.yaml
 ├── metallb/
 │   ├── app.yaml              # Load balancer application
 │   └── manifests/
