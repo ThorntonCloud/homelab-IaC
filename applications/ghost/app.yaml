@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ghost
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/ThorntonCloud/ghost-on-kubernetes
+    targetRevision: main
+    path: deploy
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ghost-on-kubernetes
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
