@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/ThorntonCloud/homelab-IaC
-    targetRevision: HEAD
+    targetRevision: dev-cilium
     path: infrastructure/envoy-gateway-config/manifests
   destination:
     server: https://kubernetes.default.svc

@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/ThorntonCloud/homelab-IaC
-    targetRevision: main
+    targetRevision: dev-cilium
     path: infrastructure/argocd-ingress/manifests
   destination:
     server: https://kubernetes.default.svc
