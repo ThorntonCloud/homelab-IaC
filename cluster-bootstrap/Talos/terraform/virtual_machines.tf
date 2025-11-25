@@ -24,7 +24,7 @@ resource "proxmox_virtual_environment_vm" "talos_cp_01" {
 
   disk {
     datastore_id = "ProxStorage"
-    file_id      = proxmox_virtual_environment_download_file.talos_nocloud_image.id
+    file_id      = proxmox_virtual_environment_file.talos_nocloud_image.id
     file_format  = "raw"
     interface    = "virtio0"
     size         = 20
@@ -74,7 +74,7 @@ resource "proxmox_virtual_environment_vm" "talos_cp_02" {
 
   disk {
     datastore_id = "ProxStorage"
-    file_id      = proxmox_virtual_environment_download_file.talos_nocloud_image.id
+    file_id      = proxmox_virtual_environment_file.talos_nocloud_image.id
     file_format  = "raw"
     interface    = "virtio0"
     size         = 20
@@ -124,7 +124,7 @@ resource "proxmox_virtual_environment_vm" "talos_cp_03" {
 
   disk {
     datastore_id = "ProxStorage"
-    file_id      = proxmox_virtual_environment_download_file.talos_nocloud_image.id
+    file_id      = proxmox_virtual_environment_file.talos_nocloud_image.id
     file_format  = "raw"
     interface    = "virtio0"
     size         = 20
@@ -175,7 +175,7 @@ resource "proxmox_virtual_environment_vm" "talos_worker_01" {
 
   disk {
     datastore_id = "ProxStorage"
-    file_id      = proxmox_virtual_environment_download_file.talos_nocloud_image.id
+    file_id      = proxmox_virtual_environment_file.talos_nocloud_image.id
     file_format  = "raw"
     interface    = "virtio0"
     size         = 20
@@ -226,7 +226,7 @@ resource "proxmox_virtual_environment_vm" "talos_worker_02" {
 
   disk {
     datastore_id = "ProxStorage"
-    file_id      = proxmox_virtual_environment_download_file.talos_nocloud_image.id
+    file_id      = proxmox_virtual_environment_file.talos_nocloud_image.id
     file_format  = "raw"
     interface    = "virtio0"
     size         = 20
@@ -277,7 +277,7 @@ resource "proxmox_virtual_environment_vm" "talos_worker_03" {
 
   disk {
     datastore_id = "ProxStorage"
-    file_id      = proxmox_virtual_environment_download_file.talos_nocloud_image.id
+    file_id      = proxmox_virtual_environment_file.talos_nocloud_image.id
     file_format  = "raw"
     interface    = "virtio0"
     size         = 20

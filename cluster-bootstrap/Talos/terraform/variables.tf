@@ -51,10 +51,10 @@ variable "cp_vip" {
 
 variable "talos_version" {
   type    = string
-  default = "v1.11.2"
+  default = "v1.11.5"
 }
 
 variable "kubernetes_version" {
   type    = string
-  default = "1.34.0"
+  default = "1.34.1"
 }

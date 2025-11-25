@@ -45,7 +45,8 @@ resource "talos_machine_configuration_apply" "cp_config_apply" {
       cpip   = var.cp_vip,
       nodeip = var.talos_cp_01_ip_addr
       gw     = var.default_gateway
-    })
+    }),
+    templatefile("./templates/disable-cni.yaml.tmpl", {})
   ]
 }
 
@@ -59,7 +60,8 @@ resource "talos_machine_configuration_apply" "cp_config_apply_02" {
       cpip   = var.cp_vip,
       nodeip = var.talos_cp_02_ip_addr
       gw     = var.default_gateway
-    })
+    }),
+    templatefile("./templates/disable-cni.yaml.tmpl", {})
   ]
 }
 
@@ -73,7 +75,8 @@ resource "talos_machine_configuration_apply" "cp_config_apply_03" {
       cpip   = var.cp_vip,
       nodeip = var.talos_cp_03_ip_addr
       gw     = var.default_gateway
-    })
+    }),
+    templatefile("./templates/disable-cni.yaml.tmpl", {})
   ]
 }
 
@@ -105,6 +108,9 @@ resource "talos_machine_configuration_apply" "worker_config_apply" {
   client_configuration        = talos_machine_secrets.machine_secrets.client_configuration
   machine_configuration_input = data.talos_machine_configuration.machineconfig_worker.machine_configuration
   node                        = var.talos_worker_01_ip_addr
+  config_patches = [
+    templatefile("./templates/disable-cni.yaml.tmpl", {})
+  ]
 }
 
 resource "talos_machine_configuration_apply" "worker_config_apply_02" {
@@ -112,6 +118,9 @@ resource "talos_machine_configuration_apply" "worker_config_apply_02" {
   client_configuration        = talos_machine_secrets.machine_secrets.client_configuration
   machine_configuration_input = data.talos_machine_configuration.machineconfig_worker_02.machine_configuration
   node                        = var.talos_worker_02_ip_addr
+  config_patches = [
+    templatefile("./templates/disable-cni.yaml.tmpl", {})
+  ]
 }
 
 resource "talos_machine_configuration_apply" "worker_config_apply_03" {
@@ -119,6 +128,9 @@ resource "talos_machine_configuration_apply" "worker_config_apply_03" {
   client_configuration        = talos_machine_secrets.machine_secrets.client_configuration
   machine_configuration_input = data.talos_machine_configuration.machineconfig_worker_03.machine_configuration
   node                        = var.talos_worker_03_ip_addr
+  config_patches = [
+    templatefile("./templates/disable-cni.yaml.tmpl", {})
+  ]
 }
 
 # Bootstrap Control Plane
@@ -128,33 +140,9 @@ resource "talos_machine_bootstrap" "bootstrap" {
   node                 = var.talos_cp_01_ip_addr
 }
 
-# Cluster Health Check
-data "talos_cluster_health" "health" {
-  depends_on = [
-    talos_machine_configuration_apply.cp_config_apply,
-    talos_machine_configuration_apply.cp_config_apply_02,
-    talos_machine_configuration_apply.cp_config_apply_03,
-    talos_machine_configuration_apply.worker_config_apply,
-    talos_machine_configuration_apply.worker_config_apply_02,
-    talos_machine_configuration_apply.worker_config_apply_03
-  ]
-  client_configuration = data.talos_client_configuration.talosconfig.client_configuration
-  control_plane_nodes = [
-    var.talos_cp_01_ip_addr,
-    var.talos_cp_02_ip_addr,
-    var.talos_cp_03_ip_addr
-  ]
-  worker_nodes = [
-    var.talos_worker_01_ip_addr,
-    var.talos_worker_02_ip_addr,
-    var.talos_worker_03_ip_addr
-  ]
-  endpoints = [var.cp_vip]
-}
-
 # Retrieve Kubeconfig
 resource "talos_cluster_kubeconfig" "kubeconfig" {
-  depends_on           = [talos_machine_bootstrap.bootstrap, data.talos_cluster_health.health]
+  depends_on           = [talos_machine_bootstrap.bootstrap]
   client_configuration = talos_machine_secrets.machine_secrets.client_configuration
   node                 = var.talos_cp_01_ip_addr
 }
@@ -204,3 +192,28 @@ output "kubeconfig_external" {
   sensitive   = true
   value       = yamlencode(local.kubeconfig_external)
 }
+
+# TODO: this needs to run after grabbing the kubeconfig
+# Cluster Health Check - have to comment this out to get kubeconfig the first time.. 
+# data "talos_cluster_health" "health" {
+#   depends_on = [
+#     talos_machine_configuration_apply.cp_config_apply,
+#     talos_machine_configuration_apply.cp_config_apply_02,
+#     talos_machine_configuration_apply.cp_config_apply_03,
+#     talos_machine_configuration_apply.worker_config_apply,
+#     talos_machine_configuration_apply.worker_config_apply_02,
+#     talos_machine_configuration_apply.worker_config_apply_03
+#   ]
+#   client_configuration = data.talos_client_configuration.talosconfig.client_configuration
+#   control_plane_nodes = [
+#     var.talos_cp_01_ip_addr,
+#     var.talos_cp_02_ip_addr,
+#     var.talos_cp_03_ip_addr
+#   ]
+#   worker_nodes = [
+#     var.talos_worker_01_ip_addr,
+#     var.talos_worker_02_ip_addr,
+#     var.talos_worker_03_ip_addr
+#   ]
+#   endpoints = [var.cp_vip]
+# }
