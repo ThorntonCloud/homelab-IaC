@@ -6,7 +6,7 @@ metadata:
 spec:
   parentRefs:
   - name: homelab-gateway
-    namespace: gateway
+    namespace: default
   hostnames:
   - "argocd.thorntoncloud.com"
   rules:
