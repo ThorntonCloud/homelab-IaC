@@ -3,6 +3,8 @@ provider "proxmox" {
   insecure  = true
   api_token = var.api_token
 
-  username = var.proxmox_user
-  password = var.proxmox_pass
+  ssh {
+    username = var.proxmox_user
+    password = var.proxmox_pass
+  }
 }
