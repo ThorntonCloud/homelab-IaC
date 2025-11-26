@@ -1,3 +1,15 @@
+# Control Plane Virtual Machines
+#
+# Defines the Proxmox VMs for the Kubernetes Control Plane.
+# These VMs are provisioned with the Talos Linux image uploaded in `files.tf`.
+#
+# Configuration Highlights:
+# - CPU: 2 Cores, x86-64-v2-AES (Host passthrough recommended for performance)
+# - Memory: 4GB
+# - Disk: 20GB Raw image on ProxStorage
+# - Network: Bridged to vmbr0
+# - IP: Static assignment via Cloud-Init (handled by Talos, but defined here for Proxmox IPAM)
+
 resource "proxmox_virtual_environment_vm" "talos_cp_01" {
   name        = "talos-cp-01"
   description = "Managed by Terraform"
@@ -147,6 +159,15 @@ resource "proxmox_virtual_environment_vm" "talos_cp_03" {
     }
   }
 }
+
+# Worker Virtual Machines
+#
+# Defines the Proxmox VMs for the Kubernetes Worker nodes.
+# Similar configuration to Control Plane, but typically with more resources if needed.
+#
+# Configuration Highlights:
+# - CPU: 4 Cores
+# - Memory: 4GB
 
 resource "proxmox_virtual_environment_vm" "talos_worker_01" {
   depends_on  = [proxmox_virtual_environment_vm.talos_cp_01]

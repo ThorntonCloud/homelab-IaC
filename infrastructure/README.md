@@ -10,32 +10,32 @@ The infrastructure is deployed declaratively via ArgoCD, following GitOps princi
 
 ```
 infrastructure/
-├── root-app.yaml              # App-of-Apps: Manages all infrastructure apps
-├── argocd-ingress            # HTTPRoute and RefGrant for ArgoCD Ingress
+├── root-app.yaml                       # App-of-Apps: Manages all infrastructure apps
+├── argocd-ingress                      # HTTPRoute and RefGrant for ArgoCD Ingress
 │   ├── app.yaml
 │   └── manifests
 │       ├── http-route.yaml
 │       └── reference-grant.yaml
 ├── cert-manager/
-│   └── app.yaml              # TLS certificate management
-├── envoy-gateway-config      # Ingress via Gateway API config
+│   └── app.yaml                        # TLS certificate management
+├── cilium-gateway-config               # Ingress via Gateway API config
 │   ├── app.yaml
 │   └── manifests
 │       ├── certificate.yaml
 │       ├── cluster-issuer.yaml
-│       ├── gateway-class.yaml
-│       └── gateway.yaml
-├── envoy-gateway-operator    # Envoy Gateway application via Helm
-│   └── app.yaml
-├── metallb/
-│   ├── app.yaml              # Load balancer application
+│       ├── gateway.yaml
+│       ├── l2-announcement.yaml
+│       ├── lb-ip-pool.yaml
+│       └── sealedsecret.yaml
+├── openebs/
+│   ├── app.yaml                        # Storage operator application
 │   └── manifests/
-│       └── metallb-native.yaml  # MetalLB configuration
-└── openebs/
-    ├── app.yaml              # Storage operator application
+│       ├── openebs-operator-lite.yaml  # OpenEBS deployment
+│       └── openebs-lite-sc.yaml        # Storage classes
+└── sealed-secrets/                     # Bitnami Sealed Secrets operator for encrypting secrets
+    ├── app.yaml
     └── manifests/
-        ├── openebs-operator-lite.yaml  # OpenEBS deployment
-        └── openebs-lite-sc.yaml        # Storage classes
+        └── controller.yaml
 ```
 
 ## Deployment
@@ -59,8 +59,10 @@ kubectl get applications -n argocd
 ```
 
 This single command deploys and manages:
+- Ingress for ArgoCD
+- Gateway + TLS via Cilium
 - cert-manager
-- MetalLB
+- Sealed Secrets
 - OpenEBS
 - Any other apps I add to the infrastructure directory
 
@@ -146,99 +148,100 @@ kubectl get clusterissuer
 
 ---
 
-### MetalLB
+### Cilium Gateway API
 
-**Purpose**: Load balancer implementation for bare-metal / private cloud Kubernetes clusters
+**Purpose**: Advanced Ingress and Load Balancing using the Kubernetes Gateway API standard.
 
-**Namespace**: `metallb-system`
+**Namespace**: `cilium-gateway-config` (configuration) / `kube-system` (implementation)
 
 **Features**:
-- LoadBalancer service type support
-- Layer 2 (ARP) and BGP modes
-- IP address pool management
-- Automatic IP assignment
+-   **L2 Announcement**: Replaces MetalLB for bare-metal load balancing.
+-   **Gateway API**: Modern replacement for Ingress resources.
+-   **TLS Termination**: Integrated with cert-manager for automatic SSL.
+-   **Traffic Splitting**: Advanced routing capabilities.
 
 **Configuration**:
 
-The `manifests/metallb-native.yaml` file contains the MetalLB configuration including IP address pools and L2 advertisements.
+The `cilium-gateway-config` directory contains the core networking configuration:
 
-**Example Configuration**:
-
-```yaml
-# IP Address Pool
-apiVersion: metallb.io/v1beta1
-kind: IPAddressPool
-metadata:
-  name: default-pool
-  namespace: metallb-system
-spec:
-  addresses:
-  - 10.10.209.100-10.10.209.150  # Adjust to your network
-
----
-# L2 Advertisement
-apiVersion: metallb.io/v1beta1
-kind: L2Advertisement
-metadata:
-  name: default
-  namespace: metallb-system
-spec:
-  ipAddressPools:
-  - default-pool
-```
+-   **`gateway.yaml`**: Defines the `Gateway` resource (the entry point for traffic).
+-   **`lb-ip-pool.yaml`**: Defines the pool of IPs available for LoadBalancer services.
+-   **`l2-announcement.yaml`**: Configures Cilium to announce IPs via ARP.
+-   **`cluster-issuer.yaml`**: Configures cert-manager to use Cloudflare (or other providers) for DNS challenges.
 
 **Usage**:
 
+To expose an application, use an `HTTPRoute` instead of an `Ingress`:
+
 ```yaml
-# Example: Create LoadBalancer service
-apiVersion: v1
-kind: Service
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
 metadata:
   name: my-app
+  namespace: default
 spec:
-  type: LoadBalancer
-  ports:
-  - port: 80
-    targetPort: 8080
-  selector:
-    app: my-app
+  parentRefs:
+  - name: main-gateway
+    namespace: cilium-gateway-config
+  hostnames:
+  - "myapp.example.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: my-app-service
+      port: 80
 ```
 
 **Verification**:
 
 ```bash
-# View MetalLB pods
-kubectl get pods -n metallb-system
+# Check Gateway status
+kubectl get gateway -n cilium-gateway-config
 
-# Check IP address pools
-kubectl get ipaddresspool -n metallb-system
+# Check LoadBalancer IP Pool
+kubectl get ippools -A
 
-# View allocated IPs
-kubectl get svc -A | grep LoadBalancer
-
-# Get specific service IP
-kubectl get svc <service-name> -n <namespace>
+# Check L2 Announcements
+kubectl get l2announcements -A
 ```
 
-**Common Tasks**:
+---
+
+### Sealed Secrets
+
+**Purpose**: Encrypt secrets into Git-safe `SealedSecret` resources.
+
+**Namespace**: `sealed-secrets`
+
+**Features**:
+-   **Encryption**: One-way encryption (public key encryption).
+-   **Decryption**: Only the controller in the cluster can decrypt.
+-   **GitOps Safe**: Safe to commit `SealedSecret` YAMLs to public repos.
+
+**Usage**:
+
+1.  **Install CLI**: `kubeseal`
+2.  **Create Secret**:
+    ```bash
+    kubectl create secret generic my-secret --from-literal=foo=bar --dry-run=client -o yaml > secret.yaml
+    ```
+3.  **Seal Secret**:
+    ```bash
+    kubeseal < secret.yaml > sealed-secret.yaml
+    ```
+4.  **Commit**: Commit `sealed-secret.yaml` to Git.
+
+**Verification**:
 
 ```bash
-# Add additional IP pool
-kubectl apply -f - <<EOF
-apiVersion: metallb.io/v1beta1
-kind: IPAddressPool
-metadata:
-  name: secondary-pool
-  namespace: metallb-system
-spec:
-  addresses:
-  - 10.10.209.200-10.10.209.250
-  autoAssign: false  # Manual assignment only
-EOF
+# Check controller logs
+kubectl logs -n sealed-secrets -l name=sealed-secrets-controller
 
-# Request specific IP for service
-# Add annotation to service:
-# metallb.universe.tf/address-pool: secondary-pool
+# Check SealedSecret status
+kubectl get sealedsecret -A
 ```
 
 ---

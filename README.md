@@ -17,15 +17,14 @@ A complete Kubernetes platform with automated deployment, built-in CI/CD, and in
 .
 ├── cluster-bootstrap/            # Kubernetes cluster deployment
 │   ├── RKE2/                     # RKE2 cluster (Terraform + Ansible)
-│   └── Talos/                    # Talos Linux cluster (Terraform + ArgoCD)
-│       ├── terraform/            # Cluster infrastructure
-│       └── argocd/               # GitOps setup
+│   └── Talos/                    # Talos Linux cluster
+│       ├── terraform/            # Step 1: Cluster infrastructure
+│       ├── cilium/               # Step 2: CNI & Gateway API
+│       └── argocd/               # Step 3: GitOps setup
 ├── infrastructure/               # Core infrastructure applications
 │   ├── argocd-ingress/           # Ingress resources and config for ArgoCD
 │   ├── cert-manager/             # TLS certificate management
-│   ├── envoy-gateway-config/     # Gateway, Certificate, etc. for Ingress and TLS
-│   ├── envoy-gateway-operator/   # Envoy Gateway Helm deployment
-│   ├── metallb/                  # Bare-metal load balancer
+│   ├── cilium-gateway-config/     # Gateway, Certificate, etc. for Ingress and TLS
 │   ├── openebs/                  # Cloud-native storage
 │   └── root-app.yaml             # ArgoCD App-of-Apps
 └── .github/workflows/            # CI/CD automation
@@ -33,7 +32,7 @@ A complete Kubernetes platform with automated deployment, built-in CI/CD, and in
 
 ## Quick Start
 
-### 1. Deploy Cluster
+### 1. Deploy Cluster Infrastructure
 Right now, the initial cluster deployment is a bit manual in order to setup the GitHub Runner controller and scale set. I may redo this at some point using Cluster API or similar tools. The management cluster deployment would still be somewhat manual, but then the application clusters could be 100% automated.
 
 Currently configured for Talos Linux with full automation support:
@@ -51,9 +50,19 @@ terraform output -raw talosconfig > ~/.talos/config
 chmod 600 ~/.kube/config ~/.talos/config
 ```
 
+### 2. Deploy Cilium CNI & Gateway API
+
+Once the cluster is bootstrapped, deploy the networking layer:
+
+```bash
+cd ../cilium
+terraform init
+terraform apply
+```
+
 See [Talos README](cluster-bootstrap/Talos/README.md) for detailed deployment guide.
 
-### 2. Deploy ArgoCD
+### 3. Deploy ArgoCD
 
 Enable GitOps-based infrastructure management:
 

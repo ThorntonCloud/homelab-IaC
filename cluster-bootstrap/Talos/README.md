@@ -10,6 +10,7 @@ The cluster consists of:
 - **3 Control Plane nodes** with VIP-based high availability
 - **3 Worker nodes**
 - **Virtual IP (VIP)** for control plane load balancing
+- **Cilium** for CNI and Load Balancing
 - **ArgoCD** for GitOps-based application deployment
 
 All nodes run Talos Linux, an immutable and minimal Linux distribution designed for Kubernetes.
@@ -18,16 +19,18 @@ All nodes run Talos Linux, an immutable and minimal Linux distribution designed 
 
 ```
 Talos/
-├── cluster.tf                  # Talos cluster configuration
-├── files.tf                    # Talos image download
-├── main.tf                     # Provider configuration
-├── providers.tf                # Provider versions
-├── variables.tf                # Variable declarations
-├── virtual_machines.tf         # VM definitions
-├── terraform.tfvars           # Your configuration (not in git)
-├── terraform.tfvars.example   # Configuration template
-├── templates/
-│   └── cpnetwork.yaml.tmpl    # Network configuration patch
+├── terraform/                  # Phase 1: Cluster Infrastructure
+│   ├── cluster.tf              # Talos cluster configuration
+│   ├── files.tf                # Talos image download
+│   ├── main.tf                 # Provider configuration
+│   ├── providers.tf            # Provider versions
+│   ├── variables.tf            # Variable declarations
+│   └── virtual_machines.tf     # VM definitions
+├── cilium/                     # Phase 2: Networking (CNI + Gateway API)
+│   ├── main.tf                 # Cilium & CRD installation
+│   └── variables.tf            # Configuration
+├── argocd/                     # Phase 3: GitOps
+│   └── terraform/              # ArgoCD deployment
 └── README.md
 ```
 
@@ -40,9 +43,18 @@ Talos/
 
 # Deployment Guide
 
+The deployment is split into three distinct phases to ensure proper dependency management and avoid race conditions.
+
 ## Phase 1: Deploy Cluster Infrastructure
 
+This phase provisions the Proxmox VMs and bootstraps the minimal Talos cluster.
+
 ### 1. Configure Terraform Variables
+
+Navigate to the terraform directory:
+```bash
+cd terraform
+```
 
 Copy the example variables file and configure it:
 
@@ -66,21 +78,6 @@ cp_vip                    = "10.10.209.10"
 talos_version             = "v1.11.2"
 kubernetes_version        = "1.34.0"
 ```
-
-### Key Variables
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `cluster_name` | Cluster identifier | homelab |
-| `proxmox_endpoint` | Proxmox API endpoint | https://10.x.x.x:8006/ |
-| `default_gateway` | Network gateway | 10.x.x.x |
-| `talos_cp_0X_ip_addr` | Control plane node IPs (3 total) | 10.x.x.x |
-| `talos_worker_0X_ip_addr` | Worker node IPs (3 total) | 10.x.x.x |
-| `cp_vip` | Control plane virtual IP | 10.x.x.x |
-| `talos_version` | Talos Linux version | v1.11.2 |
-| `kubernetes_version` | Kubernetes version | 1.34.0 |
-
-See `terraform.tfvars.example` for a complete template.
 
 ### 2. Deploy Infrastructure
 
@@ -118,9 +115,32 @@ terraform output -raw talosconfig > ~/.talos/config
 chmod 600 ~/.talos/config
 ```
 
-### 4. Verify Cluster
+## Phase 2: Deploy Networking (Cilium)
 
-Verify cluster health using Talos and Kubernetes tools:
+This phase installs the Cilium CNI and Gateway API CRDs. This is a separate step because it requires the cluster API to be fully available.
+
+### 1. Deploy Cilium
+
+Navigate to the cilium directory:
+```bash
+cd ../cilium
+```
+
+Apply the configuration:
+
+```bash
+terraform init
+terraform apply
+```
+
+This will:
+- Install Gateway API CRDs (v1.2.0)
+- Install Cilium Helm chart (v1.18.0)
+- Configure Cilium as the CNI and kube-proxy replacement
+
+### 2. Verify Cluster Health
+
+Now that the CNI is installed, nodes should become Ready.
 
 ```bash
 # Check Talos cluster health
@@ -129,29 +149,11 @@ talosctl --talosconfig ~/.talos/config health
 # View all nodes
 kubectl get nodes
 
-# View cluster info
-kubectl cluster-info
+# Check Cilium pods
+kubectl -n kube-system get pods -l k8s-app=cilium
 ```
 
-Expected output:
-```
-# kubectl get nodes
-NAME              STATUS   ROLES           AGE   VERSION
-talos-cp-01       Ready    control-plane   5m    v1.34.0
-talos-cp-02       Ready    control-plane   5m    v1.34.0
-talos-cp-03       Ready    control-plane   5m    v1.34.0
-talos-worker-01   Ready    <none>          4m    v1.34.0
-talos-worker-02   Ready    <none>          4m    v1.34.0
-talos-worker-03   Ready    <none>          4m    v1.34.0
-
-# kubectl cluster-info
-Kubernetes control plane is running at https://10.10.210.210:6443
-CoreDNS is running at https://10.10.210.210:6443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
-
-To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
-```
-
-## Phase 2: Deploy ArgoCD
+## Phase 3: Deploy ArgoCD
 Once the cluster is running and healthy, deploy ArgoCD to enable GitOps workflows.
 
 ### 1. Review ArgoCD Configuration
@@ -188,7 +190,8 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
   -o jsonpath="{.data.password}" | base64 -d && echo
 
 # Port forward to access the UI
-kubectl port-forward svc/argocd-server -n argocd 8080:443 # Optional - LoadBalancer will have an external IP once Metallb is deployed
+# Port forward to access the UI
+kubectl port-forward svc/argocd-server -n argocd 8080:443 # Optional - LoadBalancer will have an external IP once Cilium L2 Announcement is configured
 
 # Access at: https://localhost:8080
 # Username: admin
@@ -531,4 +534,5 @@ rm -f ~/.kube/config ~/.talos/config
 - [Proxmox Terraform Provider](https://registry.terraform.io/providers/bpg/proxmox/latest/docs)
 - [Talos Terraform Provider](https://registry.terraform.io/providers/siderolabs/talos/latest/docs)
 - [Kubernetes Documentation](https://kubernetes.io/docs/)
+- [Cilium Documentation](https://docs.cilium.io/)
 - [Original Tutorial by Olav](https://olav.ninja/deploying-kubernetes-cluster-on-proxmox-part-1)

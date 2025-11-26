@@ -1,3 +1,11 @@
+# Terraform Providers Configuration
+#
+# This configuration uses Terraform Cloud for state management.
+#
+# Required Providers:
+# - proxmox: For managing VMs on the Proxmox cluster.
+# - talos: For bootstrapping and configuring the Talos Linux nodes.
+# - null: For utility resources (if needed).
 terraform {
   required_version = ">= 1.13.3"
 

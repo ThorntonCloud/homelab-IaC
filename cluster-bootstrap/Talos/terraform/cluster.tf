@@ -1,9 +1,19 @@
 # Talos Cluster Configuration
+#
+# This file defines the core logic for bootstrapping the Talos cluster.
+# It handles:
+# 1. Generating machine secrets.
+# 2. Generating machine configurations for Control Plane and Worker nodes.
+# 3. Applying configurations to the nodes.
+# 4. Bootstrapping the cluster (etcd).
+# 5. Retrieving the kubeconfig.
 
 # Talos Machine Secrets
+# Generates the secrets required for the cluster (CA keys, tokens, etc.).
 resource "talos_machine_secrets" "machine_secrets" {}
 
 # Talos Client Configuration
+# Generates the client configuration (talosconfig) for interacting with the cluster via talosctl.
 data "talos_client_configuration" "talosconfig" {
   cluster_name         = var.cluster_name
   client_configuration = talos_machine_secrets.machine_secrets.client_configuration
@@ -11,6 +21,9 @@ data "talos_client_configuration" "talosconfig" {
 }
 
 # Control Plane Machine Configurations
+# Generates the machine configuration for the Control Plane nodes.
+# We use separate data sources for each node to allow for potential node-specific customization if needed,
+# although currently they share the same base configuration.
 data "talos_machine_configuration" "machineconfig_cp" {
   cluster_name     = var.cluster_name
   cluster_endpoint = "https://${var.cp_vip}:6443"
@@ -34,7 +47,14 @@ data "talos_machine_configuration" "machineconfig_cp_03" {
   kubernetes_version = var.kubernetes_version
 }
 
-# Apply Comtrol Plane Configurations
+# Apply Control Plane Configurations
+# Applies the generated configuration to the Control Plane nodes.
+#
+# CRITICAL CONFIGURATION:
+# We apply two key patches here:
+# 1. cpnetwork.yaml.tmpl: Configures the static IP and VIP for the node.
+# 2. disable-cni.yaml.tmpl: Disables the default Flannel CNI and kube-proxy.
+#    This is REQUIRED for Cilium to function correctly as the CNI and kube-proxy replacement.
 resource "talos_machine_configuration_apply" "cp_config_apply" {
   depends_on                  = [proxmox_virtual_environment_vm.talos_cp_01]
   client_configuration        = talos_machine_secrets.machine_secrets.client_configuration
@@ -81,6 +101,7 @@ resource "talos_machine_configuration_apply" "cp_config_apply_03" {
 }
 
 # Worker Machine Configurations
+# Generates the machine configuration for the Worker nodes.
 data "talos_machine_configuration" "machineconfig_worker" {
   cluster_name     = var.cluster_name
   cluster_endpoint = "https://${var.cp_vip}:6443"
@@ -103,6 +124,8 @@ data "talos_machine_configuration" "machineconfig_worker_03" {
 }
 
 # Apply Worker Configurations
+# Applies the generated configuration to the Worker nodes.
+# Also includes the disable-cni patch for consistency and Cilium support.
 resource "talos_machine_configuration_apply" "worker_config_apply" {
   depends_on                  = [proxmox_virtual_environment_vm.talos_worker_01]
   client_configuration        = talos_machine_secrets.machine_secrets.client_configuration
@@ -134,6 +157,8 @@ resource "talos_machine_configuration_apply" "worker_config_apply_03" {
 }
 
 # Bootstrap Control Plane
+# Bootstraps the cluster on the first control plane node.
+# This initializes etcd and the Kubernetes control plane components.
 resource "talos_machine_bootstrap" "bootstrap" {
   depends_on           = [talos_machine_configuration_apply.cp_config_apply]
   client_configuration = talos_machine_secrets.machine_secrets.client_configuration
@@ -141,6 +166,7 @@ resource "talos_machine_bootstrap" "bootstrap" {
 }
 
 # Retrieve Kubeconfig
+# Downloads the admin kubeconfig from the bootstrapped cluster.
 resource "talos_cluster_kubeconfig" "kubeconfig" {
   depends_on           = [talos_machine_bootstrap.bootstrap]
   client_configuration = talos_machine_secrets.machine_secrets.client_configuration
@@ -158,6 +184,9 @@ output "kubeconfig" {
   sensitive = true
 }
 
+# External Kubeconfig
+# Generates a kubeconfig that uses the VIP instead of the node IP.
+# This is useful for accessing the cluster from outside the network or via a load balancer.
 locals {
   kubeconfig_external = {
     apiVersion = "v1"

@@ -39,16 +39,14 @@ This directory contains Infrastructure as Code for bootstrapping Kubernetes clus
 
 ## Architecture Comparison
 
-| Aspect | RKE2 | Talos |
-|--------|------|-------|
-| **OS** | Any Linux distro | Talos Linux only |
-| **Management** | SSH + Ansible | API (talosctl) |
-| **Updates** | Playbook-driven | Declarative config |
-| **Complexity** | Moderate | Low |
-| **Flexibility** | High (traditional Linux) | Structured (API-driven) |
-| **Security Model** | Hardened Linux | Immutable + minimal |
-| **Bootstrap Time** | ~15-20 minutes | ~10-15 minutes |
-| **Learning Curve** | Familiar (Linux/Ansible) | New (API-based) |
+| Component | Purpose | Namespace |
+|-----------|---------|-----------|
+| **ArgoCD** | GitOps continuous delivery | argocd |
+| **cert-manager** | TLS certificate automation | cert-manager |
+| **Cilium** | CNI, Network Policy, Load Balancing | kube-system |
+| **OpenEBS** | Persistent storage | openebs |
+| **ARC** | GitHub Actions runners | arc-systems, arc-runners |
+| **Sealed Secrets** | Secret encryption | sealed-secrets |
 
 ## Cluster Specifications
 
@@ -191,7 +189,17 @@ terraform output -raw kubeconfig > ~/.kube/config
 terraform output -raw talosconfig > ~/.talos/config
 ```
 
-### 4. Verify Cluster
+### 4. Deploy Networking (Talos Only)
+
+Talos clusters require a separate step to install the CNI (Cilium) and Gateway API CRDs:
+
+```bash
+cd ../cilium
+terraform init
+terraform apply
+```
+
+### 5. Verify Cluster
 
 ```bash
 # Check node status
@@ -204,7 +212,7 @@ kubectl get all -A
 kubectl cluster-info
 ```
 
-### 5. Deploy GitOps (Optional but Recommended)
+### 6. Deploy GitOps (Optional but Recommended)
 
 **For RKE2:**
 Deploy ArgoCD manually or via Helm. ArgoCD deployment can be customized to deploy on RKE2.
@@ -422,6 +430,10 @@ The default configuration provides:
 - **Total vCPU**: 18 cores (6 control plane + 12 worker)
 - **Total Memory**: 24GB (12GB control plane + 12GB worker)
 - **Total Storage**: 120GB (20GB per node)
+- **Networking:**
+  - 7 static IPs (3 control plane + 3 workers + 1 VIP)
+  - Cilium L2 Announcement for LoadBalancer services
+  - Gateway API for Ingress
 
 Adjust based on your workload requirements:
 

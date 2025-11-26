@@ -1,3 +1,4 @@
+# Proxmox Configuration
 variable "proxmox_endpoint" {
   type        = string
   description = "Proxmox API endpoint"
@@ -19,6 +20,7 @@ variable "api_token" {
   sensitive   = true
 }
 
+# Network Configuration
 variable "default_gateway" {
   type        = string
   description = "Network gateway IP"
@@ -32,6 +34,8 @@ variable "cluster_name" {
   type = string
 }
 
+# Node IP Addresses
+# These are static IPs assigned to the Talos nodes.
 variable "talos_cp_01_ip_addr" {
   type = string
 }
@@ -56,10 +60,13 @@ variable "talos_worker_03_ip_addr" {
   type = string
 }
 
+# Control Plane VIP
+# The Virtual IP address for the Control Plane.
 variable "cp_vip" {
   type = string
 }
 
+# Versions
 variable "talos_version" {
   type    = string
   default = "v1.11.5"
