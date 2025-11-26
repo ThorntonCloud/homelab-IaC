@@ -87,10 +87,10 @@ resource "helm_release" "cilium" {
   chart      = "cilium"
   version    = "1.18.0"
   namespace  = "kube-system"
-  
+
   # Increased timeout to 20 minutes to allow sufficient time for image pulls and startup
   # on slower connections or resource-constrained environments.
-  timeout    = 1200
+  timeout = 1200
 
   # Ensure CRDs are installed before Cilium attempts to start, as it may depend on them
   # (especially with gatewayAPI.enabled=true).
@@ -164,5 +164,43 @@ resource "helm_release" "cilium" {
   set {
     name  = "gatewayAPI.enableAppProtocol"
     value = "true"
+  }
+}
+
+# GitHub Actions Runner Controller (ARC)
+#
+# Installs the ARC controller which manages the lifecycle of runner pods.
+resource "helm_release" "arc_controller" {
+  name             = "arc"
+  repository       = "oci://ghcr.io/actions/actions-runner-controller-charts"
+  chart            = "gha-runner-scale-set-controller"
+  version          = "0.9.3"
+  namespace        = "arc-systems"
+  create_namespace = true
+}
+
+# ARC Runner Scale Set
+#
+# Deploys a scale set of runners that connect to the specified GitHub repository/org.
+resource "helm_release" "arc_runner_set" {
+  name             = var.arc_runner_set_name
+  repository       = "oci://ghcr.io/actions/actions-runner-controller-charts"
+  chart            = "gha-runner-scale-set"
+  version          = "0.9.3"
+  namespace        = "arc-runners"
+  create_namespace = true
+
+  depends_on = [
+    helm_release.arc_controller
+  ]
+
+  set {
+    name  = "githubConfigUrl"
+    value = var.github_config_url
+  }
+
+  set {
+    name  = "githubConfigSecret.github_token"
+    value = var.github_pat
   }
 }

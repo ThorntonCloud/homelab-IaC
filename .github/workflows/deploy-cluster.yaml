@@ -6,14 +6,12 @@ on:
       - main
     paths:
       - 'cluster-bootstrap/Talos/terraform/**'
+      - 'cluster-bootstrap/Talos/cilium/**'
   workflow_dispatch:
 
 jobs:
-  terraform:
+  deploy-talos:
     runs-on: arc-runner-set
-    defaults:
-      run:
-        working-directory: ./cluster-bootstrap/Talos/terraform
     
     steps:
       - name: Checkout code
@@ -29,7 +27,11 @@ jobs:
           terraform_version: 1.13.3
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }} 
 
-      - name: Create terraform.tfvars
+      # ---------------------------------------------------------
+      # Step 1: Deploy Cluster Infrastructure
+      # ---------------------------------------------------------
+      - name: Create terraform.tfvars (Infrastructure)
+        working-directory: ./cluster-bootstrap/Talos/terraform
         run: |
           cat > terraform.tfvars <<EOF
           cluster_name            = "${{ secrets.CLUSTER_NAME }}"
@@ -46,28 +48,53 @@ jobs:
           api_token               = "${{ secrets.PROXMOX_API_TOKEN }}"
           EOF
 
-      - name: Terraform Init
-        id: init
+      - name: Terraform Init (Infrastructure)
+        working-directory: ./cluster-bootstrap/Talos/terraform
         run: terraform init
 
-      - name: Terraform Format Check
-        id: fmt
-        run: terraform fmt -check
-
-      - name: Terraform Validate
-        id: validate
+      - name: Terraform Validate (Infrastructure)
+        working-directory: ./cluster-bootstrap/Talos/terraform
         run: terraform validate
 
-      - name: Terraform Plan
-        id: plan
+      - name: Terraform Plan (Infrastructure)
+        working-directory: ./cluster-bootstrap/Talos/terraform
         run: terraform plan -out=tfplan
 
-      - name: Terraform Apply
-        id: apply
+      - name: Terraform Apply (Infrastructure)
+        working-directory: ./cluster-bootstrap/Talos/terraform
         run: terraform apply -auto-approve tfplan
 
-      - name: Output Apply Results
+      # ---------------------------------------------------------
+      # Step 2: Extract Kubeconfig
+      # ---------------------------------------------------------
+      - name: Extract Kubeconfig
+        working-directory: ./cluster-bootstrap/Talos/terraform
+        run: |
+          terraform output -raw kubeconfig > ../cilium/kubeconfig
+          chmod 600 ../cilium/kubeconfig
+
+      # ---------------------------------------------------------
+      # Step 3: Deploy Cilium & Gateway API
+      # ---------------------------------------------------------
+      - name: Terraform Init (Cilium)
+        working-directory: ./cluster-bootstrap/Talos/cilium
+        run: terraform init
+
+      - name: Terraform Validate (Cilium)
+        working-directory: ./cluster-bootstrap/Talos/cilium
+        run: terraform validate
+
+      - name: Terraform Plan (Cilium)
+        working-directory: ./cluster-bootstrap/Talos/cilium
+        run: terraform plan -var="kubeconfig_path=./kubeconfig" -out=tfplan
+
+      - name: Terraform Apply (Cilium)
+        working-directory: ./cluster-bootstrap/Talos/cilium
+        run: terraform apply -auto-approve tfplan
+
+      - name: Output Results
         if: always()
         run: |
-          echo "## Terraform Apply Results" >> $GITHUB_STEP_SUMMARY
-          echo "Status: ${{ steps.apply.outcome }}" >> $GITHUB_STEP_SUMMARY
+          echo "## Deployment Results" >> $GITHUB_STEP_SUMMARY
+          echo "Infrastructure: Success" >> $GITHUB_STEP_SUMMARY
+          echo "Cilium: Success" >> $GITHUB_STEP_SUMMARY

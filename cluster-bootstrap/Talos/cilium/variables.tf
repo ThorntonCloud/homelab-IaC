@@ -3,5 +3,22 @@
 variable "kubeconfig_path" {
   description = "Path to the kubeconfig file"
   type        = string
-  default     = "../terraform/kubeconfig"
+  default     = "./kubeconfig"
+}
+
+variable "github_config_url" {
+  description = "The URL of the GitHub repository or organization for the runner scale set."
+  type        = string
+}
+
+variable "github_pat" {
+  description = "Personal Access Token for GitHub authentication."
+  type        = string
+  sensitive   = true
+}
+
+variable "arc_runner_set_name" {
+  description = "Name of the runner scale set."
+  type        = string
+  default     = "arc-runner-set"
 }
