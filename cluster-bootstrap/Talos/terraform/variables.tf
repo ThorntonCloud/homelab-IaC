@@ -3,9 +3,20 @@ variable "proxmox_endpoint" {
   description = "Proxmox API endpoint"
 }
 
+variable "proxmox_user" {
+  type      = string
+  sensitive = true
+}
+
+variable "proxmox_pass" {
+  type      = string
+  sensitive = true
+}
+
 variable "api_token" {
   type        = string
   description = "Proxmox user + API Token"
+  sensitive   = true
 }
 
 variable "default_gateway" {
