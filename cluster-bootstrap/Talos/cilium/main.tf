@@ -22,7 +22,7 @@ terraform {
   required_providers {
     helm = {
       source  = "hashicorp/helm"
-      version = "~> 2.12"
+      version = "~> 3.0.0"
     }
     kubernetes = {
       source  = "hashicorp/kubernetes"
@@ -39,7 +39,7 @@ terraform {
 # We use `config_path` instead of inline credentials to avoid race conditions and
 # ensure we are using the fully generated config from the previous step.
 provider "helm" {
-  kubernetes {
+  kubernetes = {
     config_path = var.kubeconfig_path
   }
 }
@@ -98,73 +98,78 @@ resource "helm_release" "cilium" {
     kubernetes_manifest.gateway_api_crds
   ]
 
-  # IPAM Mode: Kubernetes
-  # Delegates IP address management to Kubernetes.
-  set {
-    name  = "ipam.mode"
-    value = "kubernetes"
-  }
+  set = [
 
-  # Kube-Proxy Replacement
-  # Cilium replaces kube-proxy for better performance and advanced features.
-  set {
-    name  = "kubeProxyReplacement"
-    value = "true"
-  }
+    # IPAM Mode: Kubernetes
+    # Delegates IP address management to Kubernetes.
+    {
+      name  = "ipam.mode"
+      value = "kubernetes"
+    },
 
-  # Security Context Capabilities
-  # Required capabilities for Cilium agent to operate in strict environments.
-  set {
-    name  = "securityContext.capabilities.ciliumAgent"
-    value = "{CHOWN,KILL,NET_ADMIN,NET_RAW,IPC_LOCK,SYS_ADMIN,SYS_RESOURCE,DAC_OVERRIDE,FOWNER,SETGID,SETUID}"
-  }
+    # Kube-Proxy Replacement
+    # Cilium replaces kube-proxy for better performance and advanced features.
+    {
+      name  = "kubeProxyReplacement"
+      value = "true"
+    },
 
-  set {
-    name  = "securityContext.capabilities.cleanCiliumState"
-    value = "{NET_ADMIN,SYS_ADMIN,SYS_RESOURCE}"
-  }
+    # Security Context Capabilities
+    # Required capabilities for Cilium agent to operate in strict environments.
+    {
+      name  = "securityContext.capabilities.ciliumAgent"
+      value = "{CHOWN,KILL,NET_ADMIN,NET_RAW,IPC_LOCK,SYS_ADMIN,SYS_RESOURCE,DAC_OVERRIDE,FOWNER,SETGID,SETUID}"
+    },
 
-  # CGroup Configuration
-  # Talos mounts cgroups at /sys/fs/cgroup, so we disable auto-mount and point to the host root.
-  set {
-    name  = "cgroup.autoMount.enabled"
-    value = "false"
-  }
+    {
+      name  = "securityContext.capabilities.cleanCiliumState"
+      value = "{NET_ADMIN,SYS_ADMIN,SYS_RESOURCE}"
+    },
 
-  set {
-    name  = "cgroup.hostRoot"
-    value = "/sys/fs/cgroup"
-  }
+    # CGroup Configuration
+    # Talos mounts cgroups at /sys/fs/cgroup, so we disable auto-mount and point to the host root.
+    {
+      name  = "cgroup.autoMount.enabled"
+      value = "false"
+    },
 
-  # K8s Service Host
-  # Points Cilium to the local API server endpoint (localhost:7445) which is standard for Talos nodes.
-  set {
-    name  = "k8sServiceHost"
-    value = "localhost"
-  }
+    {
+      name  = "cgroup.hostRoot"
+      value = "/sys/fs/cgroup"
+    },
 
-  set {
-    name  = "k8sServicePort"
-    value = "7445"
-  }
+    # K8s Service Host
+    # Points Cilium to the local API server endpoint (localhost:7445) which is standard for Talos nodes.
+    {
+      name  = "k8sServiceHost"
+      value = "localhost"
+    },
 
-  # Gateway API Support
-  # Enables Cilium's implementation of the Gateway API.
-  set {
-    name  = "gatewayAPI.enabled"
-    value = "true"
-  }
+    {
+      name  = "k8sServicePort"
+      value = "7445"
+    },
 
-  # Enable ALPN and AppProtocol support for Gateway API
-  set {
-    name  = "gatewayAPI.enableAlpn"
-    value = "true"
-  }
+    # Gateway API Support
+    # Enables Cilium's implementation of the Gateway API.
+    {
+      name  = "gatewayAPI.enabled"
+      value = "true"
+    },
 
-  set {
-    name  = "gatewayAPI.enableAppProtocol"
-    value = "true"
-  }
+    # Enable ALPN and AppProtocol support for Gateway API
+    {
+      name  = "gatewayAPI.enableAlpn"
+      value = "true"
+    },
+
+    {
+      name  = "gatewayAPI.enableAppProtocol"
+      value = "true"
+    }
+  ]
+
+
 }
 
 # GitHub Actions Runner Controller (ARC)
@@ -194,13 +199,14 @@ resource "helm_release" "arc_runner_set" {
     helm_release.arc_controller
   ]
 
-  set {
-    name  = "githubConfigUrl"
-    value = var.github_config_url
-  }
-
-  set {
-    name  = "githubConfigSecret.github_token"
-    value = var.github_pat
-  }
+  set = [
+    {
+      name  = "githubConfigUrl"
+      value = var.github_config_url
+    },
+    {
+      name  = "githubConfigSecret.github_token"
+      value = var.github_pat
+    }
+  ]
 }
