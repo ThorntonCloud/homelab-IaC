@@ -10,21 +10,6 @@ spec:
   hostnames:
   - "argocd.thorntoncloud.com"
   rules:
-  - matches:
-    - headers:
-      - name: Content-Type
-        # Change the type to RegularExpression and the value to match anything that starts with 'application/grpc'
-        type: RegularExpression 
-        value: "application/grpc.*" 
-    backendRefs:
-    - name: argocd-server-grpc
-      port: 80
-      
-  # RULE 2: Low Priority - Catch everything else (Web UI)
-  - matches:
-    - path:
-        type: PathPrefix
-        value: /
-    backendRefs:
+  - backendRefs:
     - name: argocd-server
       port: 80
