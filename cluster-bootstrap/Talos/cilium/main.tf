@@ -166,16 +166,6 @@ resource "helm_release" "cilium" {
     {
       name  = "gatewayAPI.enableAppProtocol"
       value = "true"
-    },
-
-    {
-      name  = "l2announcements.enabled"
-      value = "true"
-    },
-
-    {
-      name  = "loadBalancerIPAM.enabled"
-      value = "true"
     }
   ]
 
