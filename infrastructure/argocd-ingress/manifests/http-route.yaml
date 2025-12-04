@@ -10,6 +10,18 @@ spec:
   hostnames:
   - "argocd.thorntoncloud.com"
   rules:
-  - backendRefs:
-    - name: argocd-server
-      port: 80
+    - matches:
+      - headers:
+        - name: Content-Type
+          value: application/grpc
+      backendRefs:
+      - name: argocd-server-grpc
+        port: 80
+
+    - matches:
+      - path:
+          type: PathPrefix
+          value: /
+      backendRefs:
+      - name: argocd-server
+        port: 80
