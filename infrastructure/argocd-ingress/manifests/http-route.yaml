@@ -10,6 +10,26 @@ spec:
   hostnames:
   - "argocd.thorntoncloud.com"
   rules:
-  - backendRefs:
+  - matches:
+    # --- Both the path and header must match for this rule to apply ---
+    - path:
+        type: PathPrefix
+        value: /
+      headers:
+      - name: Content-Type
+        # Using Prefix is safer than Regex for common headers
+        type: Prefix 
+        value: "application/grpc" 
+    backendRefs:
+    - name: argocd-server-grpc
+      port: 80
+      
+  # RULE 2: LOW PRIORITY - Catch everything else (Web UI)
+  - matches:
+    # Only needs to match the path to catch all standard HTTP requests
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
     - name: argocd-server
       port: 80
