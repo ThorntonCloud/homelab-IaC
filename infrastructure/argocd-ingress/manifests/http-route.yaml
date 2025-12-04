@@ -10,6 +10,10 @@ spec:
   hostnames:
   - "argocd.thorntoncloud.com"
   rules:
-  - backendRefs:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
     - name: argocd-server
       port: 80
