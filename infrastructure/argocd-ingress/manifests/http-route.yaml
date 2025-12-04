@@ -11,6 +11,14 @@ spec:
   - "argocd.thorntoncloud.com"
   rules:
   - matches:
+    - headers:
+      - type: Exact
+        name: content-type
+        value: application/grpc
+    backendRefs:
+    - name: argocd-server
+      port: 80
+  - matches:
     - path:
         type: PathPrefix
         value: /
