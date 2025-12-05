@@ -26,6 +26,11 @@ spec:
           selector:
             matchLabels:
               shared-gateway-access: "true"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: wildcard-homelab-tls
     - name: grpc
       hostname: argocd-grpc.thorntoncloud.com
       protocol: HTTPS
@@ -37,8 +42,3 @@ spec:
             selector:
               matchLabels:
                 shared-gateway-access: "true"
-      tls:
-        mode: Terminate
-        certificateRefs:
-          - kind: Secret
-            name: wildcard-homelab-tls
