@@ -17,8 +17,6 @@ spec:
         value: /
       headers:
       - name: Content-Type
-        # Using Prefix is safer than Regex for common headers
-        type: Prefix 
         value: "application/grpc" 
     backendRefs:
     - name: argocd-server-grpc
